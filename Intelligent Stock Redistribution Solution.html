@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intelligent Stock Redistribution Solution</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* inSupply Health design system tokens */
+  --navy:#1c3557; --navy-overlay:rgba(28,53,87,0.6); --red:#e73846; --logo-grey:#909b9c;
+  --border-light:#c9d7e4; --sand:#eae4dc; --surface:#ffffff; --on-dark:#ffffff; --ink:#000000;
+  --body-text:#666666; --header-divider:#d7d7d7;
+  --space-1:8px; --space-2:10px; --space-3:20px; --space-4:30px; --space-5:54px; --rule-heavy:3px;
+  --radius-sm:3px; --radius-card:6px; --radius-round:50%;
+  --shadow-header:0 2px 10px rgba(0,0,0,0.3); --shadow-disc:0 1px 4px rgba(0,0,0,0.12);
+  --font:Montserrat,"Helvetica Neue",Arial,sans-serif;
+  /* roles (light) */
+  --bg:var(--surface); --panel:var(--surface); --alt:var(--sand); --text:var(--navy); --text-2:var(--body-text);
+  --line:var(--border-light); --hair:var(--header-divider); --brand:var(--navy); --on-brand:var(--on-dark);
+  --act:var(--red); --on-act:var(--on-dark); --tint:#eef3f8; --band:var(--border-light);
+  --low:var(--red); --low-tint:#fdecee; --warn:#f28c28; --warn-text:#a34a06; --warn-tint:#fff1e3; --sur:var(--navy); --sur-tint:#e6edf5; --muted-dot:#b9c6d4;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1726; --panel:#13233a; --alt:#1a2b44; --text:#e6edf5; --text-2:#a9b8ca; --line:#2c4262; --hair:#24385a;
+  --brand:#2b4d7d; --on-brand:#ffffff; --act:#e73846; --on-act:#ffffff; --tint:#182a44; --band:#2c4262;
+  --low:#ff7781; --low-tint:#3a1d26; --warn:#f5a04a; --warn-text:#ffb877; --warn-tint:#3a2a17; --sur:#9fc0e6; --sur-tint:#1b3150; --muted-dot:#3b5578;
+}}
+:root[data-theme="dark"]{
+  --bg:#0c1726; --panel:#13233a; --alt:#1a2b44; --text:#e6edf5; --text-2:#a9b8ca; --line:#2c4262; --hair:#24385a;
+  --brand:#2b4d7d; --on-brand:#ffffff; --act:#e73846; --on-act:#ffffff; --tint:#182a44; --band:#2c4262;
+  --low:#ff7781; --low-tint:#3a1d26; --warn:#f5a04a; --warn-text:#ffb877; --warn-tint:#3a2a17; --sur:#9fc0e6; --sur-tint:#1b3150; --muted-dot:#3b5578;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--text);font:400 14px/1.55 var(--font);-webkit-text-size-adjust:100%}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--act);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+
+/* header */
+.top{position:sticky;top:0;z-index:20;background:var(--panel);box-shadow:var(--shadow-header)}
+.top .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-1) var(--space-3);padding-top:var(--space-2);padding-bottom:var(--space-2)}
+.logo{background:var(--surface);border-radius:var(--radius-sm);padding:2px 6px;display:flex}
+.logo img{height:34px;width:auto;display:block}
+.appname{font-weight:700;font-size:15px;line-height:1.2;margin-right:auto}
+.appname small{display:block;font-weight:500;font-size:11px;color:var(--text-2)}
+.actas{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-1);font-size:13px}
+.actas label{font-weight:600}
+select,input[type=number],input[type=text],textarea{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:6px var(--space-1);max-width:100%}
+.actas select{max-width:240px}
+
+/* tabs */
+.tabs{display:flex;gap:2px;overflow-x:auto;border-top:1px solid var(--hair)}
+.tab{flex:1 0 auto;border:0;background:none;padding:var(--space-2) var(--space-1);font-weight:600;font-size:13px;color:var(--text-2);border-bottom:var(--rule-heavy) solid transparent;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
+.tab .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:var(--radius-round);border:1.5px solid currentColor;font-size:12px}
+.tab[aria-selected=true]{color:var(--text);border-bottom-color:var(--act)}
+.tab .badge{background:var(--act);color:var(--on-act);border-radius:999px;font-size:11px;padding:0 6px;font-weight:700}
+
+main{padding:var(--space-3) 0 var(--space-5)}
+@media (max-width:640px){.top{position:static}.logo img{height:28px}}
+h1{font-size:clamp(22px,4.5vw,30px);line-height:1.2;margin:0 0 6px;font-weight:700}
+h2{font-size:18px;line-height:1.3;margin:var(--space-4) 0 var(--space-2);font-weight:700}
+h3{font-size:16px;line-height:1.3;margin:0;font-weight:700}
+p{margin:0 0 var(--space-2)}
+.lede{color:var(--text-2);max-width:68ch;margin-bottom:var(--space-3)}
+.muted{color:var(--text-2)}
+.small{font-size:12.5px}
+.rule{width:56px;height:var(--rule-heavy);background:var(--brand);margin:var(--space-1) 0 var(--space-3)}
+
+/* labels for mocked / assumed */
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;line-height:1.3;padding:2px 7px;border-radius:var(--radius-sm);border:1px dashed var(--text-2);color:var(--text-2);background:transparent;vertical-align:middle}
+.tag.ai{border-style:solid;border-color:var(--brand);color:var(--text);background:var(--sur-tint)}
+.tag.mock{border-color:var(--act);color:var(--text)}
+
+/* buttons */
+.btn{border:0;border-radius:var(--radius-sm);padding:var(--space-1) 18px;font-weight:600;font-size:14px;line-height:23px;cursor:pointer;background:var(--act);color:var(--on-act);text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn.sec{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1.5px var(--brand)}
+.btn.quiet{background:transparent;color:var(--text);padding:6px var(--space-2);text-decoration:underline;text-underline-offset:3px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:var(--space-1);align-items:center}
+
+/* thresholds legend */
+.legend{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-3);background:var(--alt);border-radius:var(--radius-card);padding:var(--space-2) var(--space-3);font-size:12.5px;margin-bottom:var(--space-3)}
+.legend b{font-weight:700}
+.dot{display:inline-block;width:10px;height:10px;border-radius:var(--radius-round);margin-right:5px;vertical-align:-1px}
+
+.hint{border-left:var(--rule-heavy) solid var(--brand);padding:var(--space-1) var(--space-2);background:var(--tint);margin-bottom:var(--space-3);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:3px 10px;font-size:12.5px;cursor:pointer;font-weight:500}
+.chip:hover{border-color:var(--brand)}
+
+/* alerts */
+.alerts{display:grid;gap:var(--space-2)}
+.alert{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-1) var(--space-3);align-items:center;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:var(--radius-card);padding:var(--space-2) var(--space-3)}
+.alert.out{border-left-color:var(--low)}
+.alert.low{border-left-color:var(--warn)}
+.alert.sur{border-left-color:var(--sur)}
+.alert .item{font-weight:700;font-size:15px;line-height:1.3}
+.alert .meta{font-size:12.5px;color:var(--text-2)}
+.status{font-weight:700;font-size:12px;padding:1px 7px;border-radius:var(--radius-sm);white-space:nowrap}
+.status.out{background:var(--low-tint);color:var(--low)}
+.status.low{background:var(--warn-tint);color:var(--warn-text)}
+.status.sur{background:var(--sur-tint);color:var(--sur)}
+.status.other{background:var(--alt);color:var(--text)}
+.source{font-size:12.5px;font-weight:600;margin-top:4px}
+.source.yes{color:var(--text)}
+.source.no{color:var(--text-2);font-weight:500}
+@media (max-width:560px){.alert{grid-template-columns:1fr}.alert .act{justify-self:start}}
+
+/* gauge: months of stock against the 3–6 month band */
+.gauge{position:relative;height:16px;margin:6px 0 2px;max-width:420px}
+.gauge .track{position:absolute;left:0;right:0;top:6px;height:4px;background:var(--hair);border-radius:2px}
+.gauge .band{position:absolute;top:3px;height:10px;background:var(--band);border-radius:2px}
+.gauge .mark{position:absolute;top:0;width:4px;height:16px;border-radius:2px;transform:translateX(-2px)}
+.gauge .over{position:absolute;right:-2px;top:-1px;font-size:11px;font-weight:700}
+.gscale{position:relative;height:14px;max-width:420px;font-size:10.5px;line-height:14px;color:var(--text-2)}
+.gscale span{position:absolute;top:0;transform:translateX(-50%)}
+.gscale span:first-child{transform:none}.gscale span:last-child{transform:none;left:auto!important;right:0}
+
+/* suggestions */
+.need{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-2) var(--space-3);background:var(--brand);color:var(--on-brand);border-radius:var(--radius-card);padding:var(--space-3);margin-bottom:var(--space-3)}
+.need .k{font-size:12px;opacity:.85}
+.need .v{font-size:20px;font-weight:700;line-height:1.2}
+.need .facts{display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-4)}
+.need .btn.sec{color:var(--on-brand);box-shadow:inset 0 0 0 1.5px var(--on-brand)}
+@media (max-width:560px){.need{grid-template-columns:1fr}}
+.sgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:var(--space-3);align-items:start}
+@media (max-width:820px){.sgrid{grid-template-columns:1fr}}
+.cards{display:grid;gap:var(--space-2)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-card);padding:var(--space-3)}
+.card.top1{border:2px solid var(--brand)}
+.card .head{display:flex;gap:var(--space-2);align-items:flex-start}
+.rank{flex:0 0 auto;display:grid;place-items:center;width:30px;height:30px;border-radius:var(--radius-round);background:var(--brand);color:var(--on-brand);font-weight:700}
+.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--space-1) var(--space-3);margin:var(--space-2) 0}
+.fig .k{font-size:11.5px;color:var(--text-2);line-height:1.3}
+.fig .v{font-size:16px;font-weight:700;line-height:1.3}
+.fig .s{font-size:11.5px;color:var(--text-2);line-height:1.3}
+.reason{border-top:1px solid var(--hair);padding-top:var(--space-1);margin-top:var(--space-1);font-size:13.5px}
+.reason .who{font-weight:700}
+.thinking{display:inline-flex;gap:6px;align-items:center;color:var(--text-2)}
+.thinking i{width:6px;height:6px;border-radius:var(--radius-round);background:var(--brand);animation:pulse 1.2s infinite ease-in-out}
+.thinking i:nth-child(2){animation-delay:.2s}.thinking i:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.thinking i{animation:none;opacity:.7}}
+.orders{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);background:var(--alt);border-radius:var(--radius-card);padding:var(--space-2) var(--space-3);font-size:13px;margin-bottom:var(--space-2)}
+.orders ol{margin:4px 0 0;padding-left:20px}
+.orders .agree{grid-column:1/-1;font-weight:600;font-size:12.5px}
+.empty{background:var(--alt);border-radius:var(--radius-card);padding:var(--space-3);}
+.empty strong{display:block;font-size:17px;margin-bottom:4px}
+.left-out{font-size:12.5px;color:var(--text-2);margin-top:var(--space-2)}
+.left-out li{margin-bottom:2px}
+.mapbox{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-card);padding:var(--space-2)}
+.mapbox svg{display:block;width:100%;height:auto}
+.mapcap{font-size:11.5px;color:var(--text-2);margin-top:6px}
+
+/* requests */
+.req{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-card);padding:var(--space-3);margin-bottom:var(--space-2)}
+.req .title{display:flex;flex-wrap:wrap;gap:var(--space-1);align-items:baseline;justify-content:space-between}
+.steps{display:flex;flex-wrap:wrap;gap:4px;margin:var(--space-2) 0;padding:0;list-style:none;counter-reset:s}
+.steps li{flex:1 1 120px;font-size:12px;padding:6px var(--space-1);border-radius:var(--radius-sm);background:var(--alt);color:var(--text-2);counter-increment:s}
+.steps li::before{content:counter(s) ". ";font-weight:700}
+.steps li.done{background:var(--sur-tint);color:var(--text)}
+.steps li.now{background:var(--brand);color:var(--on-brand);font-weight:600}
+.steps li.bad{background:var(--low-tint);color:var(--low);font-weight:600}
+.form{display:grid;gap:var(--space-2);max-width:520px}
+.form label{font-weight:600;font-size:13px;display:grid;gap:4px}
+.form .help{font-weight:400;font-size:12px;color:var(--text-2)}
+.panel{background:var(--alt);border-radius:var(--radius-card);padding:var(--space-3);margin:var(--space-2) 0}
+.log{font-size:12px;color:var(--text-2);margin:var(--space-1) 0 0;padding-left:18px}
+.who-note{font-size:12.5px;background:var(--tint);border-radius:var(--radius-sm);padding:6px var(--space-2);margin:var(--space-1) 0}
+.outbox{background:var(--panel);border:1.5px dashed var(--act);border-radius:var(--radius-card);padding:var(--space-2) var(--space-3);font-size:13px;white-space:pre-wrap;margin-top:var(--space-1)}
+.banner{font-size:12.5px;background:var(--low-tint);color:var(--text);border-radius:var(--radius-sm);padding:6px var(--space-2);margin-bottom:var(--space-2)}
+.table{width:100%;border-collapse:collapse;font-size:12.5px}
+.table th,.table td{text-align:left;padding:4px 8px 4px 0;border-bottom:1px solid var(--hair);vertical-align:top}
+.scrollx{overflow-x:auto}
+details{background:var(--alt);border-radius:var(--radius-card);padding:var(--space-2) var(--space-3);margin-top:var(--space-4)}
+details summary{cursor:pointer;font-weight:700}
+details .table{margin-top:var(--space-1)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <span class="logo"><img src="data:image/png;base64,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" alt="inSupply Health"></span>
+    <div class="appname">Intelligent Stock Redistribution Solution<small id="updated">Last updated on 1 Oct 2026</small></div>
+    <div class="actas">
+      <label for="asFac">Acting as</label>
+      <select id="asFac"></select>
+      <select id="asRole" aria-label="Role">
+        <option value="staff">Staff</option>
+        <option value="incharge">Facility in-charge</option>
+      </select>
+    </div>
+  </div>
+  <div class="wrap"><nav class="tabs" role="tablist" id="tabs"></nav></div>
+</header>
+<main class="wrap" id="main"></main>
+
+<script>
+/* ---------- Embedded synthetic data (synthetic_data_with_coords.csv, necessary columns only) ---------- */
+// [csvRow, facility, level, item, unit, expiry m/d/yyyy, stockOnHand, avgMonthlyConsumption, batch, lat, lon]
+const RAW = [[2,"Kilombero Dispensary 065","Dispensary","Ciprofloxacin 500mg Tablets","Tablets","3/27/2026",183,104,"LOT-2025-4217",-8.16556,36.68716],[3,"Newala Dispensary 027","Dispensary","Tetracycline Eye Ointment 1% Tubes","Tubes","9/9/2027",345,113,"LOT-2027-5491",-11.02007,39.33524],[4,"Bagamoyo Health Centre 050","Health Centre","Folic Acid 5mg Tablets","Tablets","11/19/2026",2005,168,"LOT-2025-1237",-6.36356,38.84647],[5,"Mbeya Dispensary 074","Dispensary","Amoxicillin 500mg Capsules","Capsules","3/15/2028",108,112,"LOT-2028-2273",-8.97202,33.50113],[6,"Kyela Health Centre 068","Health Centre","Doxycycline 100mg Capsules","Capsules","4/26/2025",673,313,"LOT-2024-8239",-9.61451,33.77768],[7,"Newala Dispensary 060","Dispensary","Metronidazole 200mg Tablets","Tablets","4/28/2029",109,88,"LOT-2028-6129",-10.88205,39.19723],[8,"Njombe Dispensary 080","Dispensary","Albendazole 400mg Tablets","Tablets","3/21/2027",870,251,"LOT-2027-7347",-9.3691,34.68409],[9,"Kyela Dispensary 035","Dispensary","Chlorhexidine Gel 7.1% Tubes","Tubes","10/12/2025",1305,392,"LOT-2024-7790",-9.53069,33.86181],[10,"Kyela District Hospital 061","District Hospital","Ceftriaxone 1g Vials","Vials","5/8/2029",193,158,"LOT-2029-9061",-9.65612,33.89045],[11,"Newala Dispensary 060","Dispensary","Magnesium Sulphate 500mg/ml Ampoules","Ampoules","9/29/2028",12,37,"LOT-2027-5608",-10.88205,39.19723],[12,"Njombe Dispensary 080","Dispensary","Ciprofloxacin 500mg Tablets","Tablets","7/31/2028",633,351,"LOT-2027-8418",-9.3691,34.68409],[13,"Handeni District Hospital 019","District Hospital","Oral Rehydration Salts 20.5g Sachets","Sachets","1/8/2029",123,156,"LOT-2028-3349",-5.4212,37.98911],[14,"Newala Health Centre 081","Health Centre","Ringer's Lactate 500ml Bottles","Bottles","8/21/2027",77,119,"LOT-2026-6814",-10.91848,39.24517],[15,"Mvomero Health Centre 020","Health Centre","Oral Rehydration Salts 20.5g Sachets","Sachets","6/3/2029",30,29,"LOT-2029-1959",-6.36236,37.60401],[16,"Handeni Health Centre 049","Health Centre","Albendazole 400mg Tablets","Tablets","5/21/2027",169,157,"LOT-2026-7797",-5.54805,38.08259],[17,"Newala Dispensary 060","Dispensary","Ferrous Sulphate 200mg Tablets","Tablets","1/23/2026",91,18,"LOT-2026-8132",-10.88205,39.19723],[18,"Mbeya Dispensary 063","Dispensary","Doxycycline 100mg Capsules","Capsules","4/21/2029",87,81,"LOT-2029-3775",-8.91277,33.48777],[19,"Bagamoyo Health Centre 055","Health Centre","Oral Rehydration Salts 20.5g Sachets","Sachets","9/22/2028",265,209,"LOT-2028-4148",-6.45366,38.98653],[20,"Tunduru District Hospital 064","District Hospital","ORS + Zinc Co-pack combo Sachets","Sachets","11/21/2027",52,63,"LOT-2026-9050",-11.07866,37.42443],[21,"Kyela District Hospital 061","District Hospital","Chlorhexidine Gel 7.1% Tubes","Tubes","8/6/2028",754,337,"LOT-2027-1988",-9.65612,33.89045],[22,"Korogwe Dispensary 052","Dispensary","Zinc Sulphate 20mg Tablets","Tablets","8/14/2027",1361,424,"LOT-2027-7851",-5.11459,38.40409],[23,"Bagamoyo Health Centre 055","Health Centre","Salbutamol Inhaler 100mcg Inhalers","Inhalers","12/23/2028",98,57,"LOT-2028-1160",-6.45366,38.98653],[24,"Iringa Dispensary 024","Dispensary","Tetracycline Eye Ointment 1% Tubes","Tubes","2/17/2029",28,17,"LOT-2028-6077",-7.79563,35.60162],[25,"Songea Health Centre 053","Health Centre","ORS + Zinc Co-pack combo Sachets","Sachets","7/15/2026",65,152,"LOT-2025-1051",-10.64898,35.68672],[26,"Same Dispensary 022","Dispensary","Benzyl Benzoate Lotion 25% Bottles","Bottles","6/23/2028",47,200,"LOT-2027-3896",-4.02397,37.81285],[27,"Iringa Dispensary 088","Dispensary","Gentamicin 40mg/ml Vials","Vials","6/29/2029",195,26,"LOT-2028-5524",-7.79996,35.60109],[28,"Lindi Dispensary 015","Dispensary","Depo-Provera 150mg/ml Vials","Vials","12/25/2028",117,29,"LOT-2028-3018",-9.90461,39.77787],[29,"Handeni Health Centre 049","Health Centre","Amoxicillin 500mg Capsules","Capsules","9/28/2027",66,21,"LOT-2026-6871",-5.54805,38.08259],[30,"Kibaha Health Centre 068","Health Centre","Magnesium Sulphate 500mg/ml Ampoules","Ampoules","4/17/2029",181,197,"LOT-2028-5427",-6.76641,38.98883],[31,"Mwanga District Hospital 037","District Hospital","Diazepam 5mg/ml Ampoules","Ampoules","9/26/2026",52,87,"LOT-2025-4801",-3.83104,37.47938],[32,"Newala Dispensary 027","Dispensary","Ringer's Lactate 500ml Bottles","Bottles","1/12/2026",128,60,"LOT-2026-1144",-11.02007,39.33524],[33,"Masasi Dispensary 085","Dispensary","Folic Acid 5mg Tablets","Tablets","1/11/2026",116,50,"LOT-2026-6320",-10.67001,38.82186],[34,"Mvomero Health Centre 020","Health Centre","Ferrous Sulphate 200mg Tablets","Tablets","12/29/2025",97,173,"LOT-2024-9038",-6.36236,37.60401],[35,"Handeni Dispensary 059","Dispensary","Zinc Sulphate 20mg Tablets","Tablets","3/31/2028",69,33,"LOT-2027-5140",-5.38214,37.97975],[36,"Masasi Dispensary 085","Dispensary","Benzyl Benzoate Lotion 25% Bottles","Bottles","11/10/2026",34,14,"LOT-2026-2203",-10.67001,38.82186],[37,"Njombe District Hospital 026","District Hospital","Chlorhexidine Gel 7.1% Tubes","Tubes","6/9/2025",1582,370,"LOT-2025-1082",-9.27321,34.81899],[38,"Mbeya Dispensary 063","Dispensary","Diazepam 5mg/ml Ampoules","Ampoules","9/26/2028",239,133,"LOT-2028-8291",-8.91277,33.48777],[39,"Bagamoyo Health Centre 055","Health Centre","Gentamicin 40mg/ml Vials","Vials","11/30/2026",211,208,"LOT-2026-8965",-6.45366,38.98653],[40,"Bagamoyo District Hospital 057","District Hospital","Chlorhexidine Gel 7.1% Tubes","Tubes","6/23/2026",622,442,"LOT-2025-3530",-6.51423,38.837],[41,"Morogoro Dispensary 066","Dispensary","Zinc Sulphate 20mg Tablets","Tablets","1/31/2027",428,150,"LOT-2027-1855",-6.79489,37.65156],[42,"Korogwe Dispensary 092","Dispensary","Zinc Sulphate 20mg Tablets","Tablets","3/4/2028",31,26,"LOT-2027-3334",-5.1018,38.48107],[43,"Tunduru District Hospital 073","District Hospital","Chlorhexidine Gel 7.1% Tubes","Tubes","2/9/2026",3,13,"LOT-2026-4397",-10.99993,37.357],[44,"Lindi Dispensary 016","Dispensary","ORS + Zinc Co-pack combo Sachets","Sachets","6/27/2028",333,89,"LOT-2028-9674",-9.9199,39.77732],[45,"Kilombero Health Centre 039","Health Centre","Insulin (Soluble) 100IU/ml Vials","Vials","8/12/2029",422,134,"LOT-2028-3032",-8.15615,36.69868],[46,"Morogoro Dispensary 049","Dispensary","Normal Saline 1000ml Bottles","Bottles","3/5/2029",87,342,"LOT-2028-6414",-6.78108,37.73386],[47,"Morogoro Health Centre 095","Health Centre","Zinc Sulphate 20mg Tablets","Tablets","10/3/2028",290,126,"LOT-2028-5074",-6.77055,37.67713],[48,"Kilosa Dispensary 082","Dispensary","Normal Saline 1000ml Bottles","Bottles","4/5/2026",685,138,"LOT-2026-2595",-6.78369,36.98786],[49,"Same Health Centre 053","Health Centre","Folic Acid 5mg Tablets","Tablets","10/22/2027",47,180,"LOT-2026-5418",-4.04993,37.76823],[50,"Mvomero Health Centre 020","Health Centre","Cotrimoxazole 480mg Tablets","Tablets","7/2/2026",97,90,"LOT-2025-1795",-6.36236,37.60401],[51,"Mvomero Dispensary 086","Dispensary","Amoxicillin 250mg Tablets","Tablets","7/13/2029",10,13,"LOT-2028-3044",-6.41053,37.5439],[52,"Newala Health Centre 081","Health Centre","Diazepam 5mg/ml Ampoules","Ampoules","4/11/2028",90,339,"LOT-2028-1350",-10.91848,39.24517],[53,"Morogoro District Hospital 001","District Hospital","Chlorhexidine Gel 7.1% Tubes","Tubes","5/31/2025",405,326,"LOT-2025-9231",-6.82079,37.62717],[54,"Masasi Health Centre 053","Health Centre","Oral Rehydration Salts 20.5g Sachets","Sachets","3/29/2028",123,232,"LOT-2027-4326",-10.62914,38.79686],[55,"Korogwe District Hospital 087","District Hospital","Artemether/Lumefantrine 20/120mg Tablets","Tablets","9/26/2028",1196,284,"LOT-2028-9276",-5.13105,38.505],[56,"Newala Dispensary 012","Dispensary","ORS + Zinc Co-pack combo Sachets","Sachets","10/9/2025",29,37,"LOT-2024-3131",-11.03056,39.32505],[57,"Lindi Health Centre 086","Health Centre","Ibuprofen 400mg Tablets","Tablets","10/3/2025",395,346,"LOT-2025-9039",-10.00707,39.77958],[58,"Kilosa Dispensary 052","Dispensary","Folic Acid 5mg Tablets","Tablets","8/25/2026",12,14,"LOT-2026-1233",-6.76599,36.99882],[59,"Handeni Health Centre 049","Health Centre","Oxytocin 10IU/ml Ampoules","Ampoules","10/13/2028",242,131,"LOT-2028-3316",-5.54805,38.08259],[60,"Same Dispensary 090","Dispensary","Folic Acid 5mg Tablets","Tablets","8/6/2027",113,47,"LOT-2026-7091",-4.09393,37.75421],[61,"Same Dispensary 061","Dispensary","Amoxicillin 500mg Capsules","Capsules","2/1/2028",440,119,"LOT-2028-3515",-4.04737,37.76501],[62,"Korogwe Dispensary 065","Dispensary","Salbutamol Inhaler 100mcg Inhalers","Inhalers","6/24/2028",61,87,"LOT-2028-9331",-5.22783,38.51607],[63,"Mvomero Dispensary 086","Dispensary","ORS + Zinc Co-pack combo Sachets","Sachets","9/29/2028",68,25,"LOT-2027-3161",-6.41053,37.5439],[64,"Korogwe Dispensary 063","Dispensary","Insulin (Soluble) 100IU/ml Vials","Vials","2/1/2029",11,20,"LOT-2029-8215",-5.16217,38.38999],[65,"Kilosa Health Centre 028","Health Centre","Amoxicillin 250mg Tablets","Tablets","12/27/2026",624,254,"LOT-2025-8582",-6.75463,37.0088],[66,"Newala Dispensary 060","Dispensary","Tetracycline Eye Ointment 1% Tubes","Tubes","2/8/2026",237,123,"LOT-2026-3224",-10.88205,39.19723],[67,"Njombe Dispensary 098","Dispensary","Ciprofloxacin 500mg Tablets","Tablets","10/8/2028",96,28,"LOT-2028-4974",-9.33468,34.70936],[68,"Iringa Dispensary 087","Dispensary","Benzyl Benzoate Lotion 25% Bottles","Bottles","4/12/2028",308,42,"LOT-2027-6215",-7.73768,35.64914],[69,"Newala District Hospital 016","District Hospital","ORS + Zinc Co-pack combo Sachets","Sachets","11/4/2027",849,833,"LOT-2026-7514",-10.90137,39.22023],[70,"Newala Health Centre 081","Health Centre","Folic Acid 5mg Tablets","Tablets","2/21/2027",513,81,"LOT-2026-6704",-10.91848,39.24517],[71,"Mbeya Dispensary 021","Dispensary","ORS + Zinc Co-pack combo Sachets","Sachets","6/22/2028",284,114,"LOT-2028-4410",-8.98491,33.49705],[72,"Njombe Health Centre 024","Health Centre","Doxycycline 100mg Capsules","Capsules","5/5/2027",127,67,"LOT-2026-9385",-9.27123,34.8085],[73,"Kilombero District Hospital 089","District Hospital","Oxytocin 10IU/ml Ampoules","Ampoules","7/16/2025",79,175,"LOT-2025-2026",-8.04513,36.75114],[74,"Morogoro Health Centre 095","Health Centre","Artemether/Lumefantrine 20/120mg Tablets","Tablets","2/26/2027",587,555,"LOT-2027-6144",-6.77055,37.67713],[75,"Korogwe Dispensary 063","Dispensary","Benzyl Benzoate Lotion 25% Bottles","Bottles","12/1/2028",11,29,"LOT-2028-1658",-5.16217,38.38999],[76,"Masasi Dispensary 085","Dispensary","ORS + Zinc Co-pack combo Sachets","Sachets","7/10/2026",133,94,"LOT-2025-2810",-10.67001,38.82186],[77,"Mbeya Dispensary 074","Dispensary","Salbutamol Inhaler 100mcg Inhalers","Inhalers","4/17/2026",70,82,"LOT-2025-6646",-8.97202,33.50113],[78,"Handeni District Hospital 009","District Hospital","Ringer's Lactate 500ml Bottles","Bottles","5/23/2025",2576,408,"LOT-2025-9947",-5.46917,38.04092],[79,"Handeni Dispensary 059","Dispensary","Ringer's Lactate 500ml Bottles","Bottles","1/26/2027",12,19,"LOT-2027-3258",-5.38214,37.97975],[80,"Iringa Dispensary 024","Dispensary","Ceftriaxone 1g Vials","Vials","2/4/2028",636,282,"LOT-2028-3747",-7.79563,35.60162],[81,"Masasi Dispensary 052","Dispensary","Normal Saline 1000ml Bottles","Bottles","11/1/2027",81,120,"LOT-2027-4891",-10.67228,38.86099],[82,"Kyela Health Centre 059","Health Centre","ORS + Zinc Co-pack combo Sachets","Sachets","6/1/2027",269,213,"LOT-2026-6137",-9.59933,33.85022],[83,"Morogoro Dispensary 049","Dispensary","Depo-Provera 150mg/ml Vials","Vials","7/8/2025",183,47,"LOT-2025-1722",-6.78108,37.73386],[84,"Masasi Dispensary 052","Dispensary","Vitamin A 100000IU Capsules","Capsules","12/2/2027",34,42,"LOT-2026-4990",-10.67228,38.86099],[85,"Iringa Dispensary 024","Dispensary","Gentamicin 40mg/ml Vials","Vials","4/20/2026",1207,419,"LOT-2025-6869",-7.79563,35.60162],[86,"Njombe Dispensary 080","Dispensary","Benzyl Benzoate Lotion 25% Bottles","Bottles","1/1/2026",13,49,"LOT-2026-5984",-9.3691,34.68409],[87,"Kilosa District Hospital 081","District Hospital","Vitamin A 100000IU Capsules","Capsules","2/14/2029",2357,849,"LOT-2028-8966",-6.8801,37.03929],[88,"Newala Dispensary 060","Dispensary","Chlorhexidine Gel 7.1% Tubes","Tubes","11/11/2027",351,240,"LOT-2027-7263",-10.88205,39.19723],[89,"Mbeya Health Centre 091","Health Centre","Doxycycline 100mg Capsules","Capsules","9/11/2025",23,56,"LOT-2024-5667",-8.8368,33.38866],[90,"Same Dispensary 090","Dispensary","Metronidazole 200mg Tablets","Tablets","1/20/2029",100,64,"LOT-2029-6717",-4.09393,37.75421],[91,"Lindi Dispensary 015","Dispensary","Magnesium Sulphate 500mg/ml Ampoules","Ampoules","8/26/2028",307,53,"LOT-2027-1687",-9.90461,39.77787],[92,"Korogwe Health Centre 075","Health Centre","Ringer's Lactate 500ml Bottles","Bottles","10/29/2025",682,483,"LOT-2024-5127",-5.08615,38.50603],[93,"Kibaha Dispensary 070","Dispensary","Ciprofloxacin 500mg Tablets","Tablets","10/27/2028",213,48,"LOT-2027-9482",-6.75802,38.85924],[94,"Njombe District Hospital 026","District Hospital","Ciprofloxacin 500mg Tablets","Tablets","1/29/2026",304,118,"LOT-2026-2971",-9.27321,34.81899],[95,"Korogwe Dispensary 063","Dispensary","Ibuprofen 400mg Tablets","Tablets","6/11/2025",24,26,"LOT-2025-3921",-5.16217,38.38999],[96,"Mbeya Health Centre 020","Health Centre","Amoxicillin 250mg Tablets","Tablets","10/22/2025",952,555,"LOT-2024-5245",-8.91183,33.43802],[97,"Kilosa Dispensary 018","Dispensary","Diazepam 5mg/ml Ampoules","Ampoules","8/12/2027",61,35,"LOT-2026-6429",-6.74859,36.97944],[98,"Newala Dispensary 012","Dispensary","Albendazole 400mg Tablets","Tablets","8/25/2026",162,83,"LOT-2025-1669",-11.03056,39.32505],[99,"Same Health Centre 079","Health Centre","Magnesium Sulphate 500mg/ml Ampoules","Ampoules","2/1/2029",149,102,"LOT-2029-5643",-4.06166,37.72354],[100,"Bagamoyo Health Centre 003","Health Centre","Ringer's Lactate 500ml Bottles","Bottles","2/26/2028",4160,892,"LOT-2027-4243",-6.42626,38.87814],[101,"Korogwe District Hospital 095","District Hospital","Paracetamol 500mg Tablets","Tablets","6/8/2028",239,239,"LOT-2027-8780",-5.23646,38.40559],[102,"Korogwe Dispensary 065","Dispensary","Metronidazole 200mg Tablets","Tablets","6/24/2025",90,108,"LOT-2025-5561",-5.22783,38.51607],[103,"Morogoro District Hospital 078","District Hospital","Chlorhexidine Gel 7.1% Tubes","Tubes","9/26/2027",468,169,"LOT-2026-7848",-6.77766,37.67712],[104,"Korogwe Dispensary 020","Dispensary","Doxycycline 100mg Capsules","Capsules","5/17/2028",161,65,"LOT-2027-2144",-5.07921,38.53724],[105,"Morogoro Health Centre 025","Health Centre","Oxytocin 10IU/ml Ampoules","Ampoules","1/24/2029",53,86,"LOT-2029-4268",-6.89313,37.599],[106,"Kilosa Dispensary 082","Dispensary","Folic Acid 5mg Tablets","Tablets","4/15/2028",101,50,"LOT-2028-2359",-6.78369,36.98786],[107,"Masasi Dispensary 085","Dispensary","Diazepam 5mg/ml Ampoules","Ampoules","5/23/2026",125,79,"LOT-2025-2459",-10.67001,38.82186],[108,"Kilosa Health Centre 028","Health Centre","Benzyl Benzoate Lotion 25% Bottles","Bottles","5/17/2027",113,49,"LOT-2027-8178",-6.75463,37.0088],[109,"Iringa Dispensary 088","Dispensary","Benzyl Benzoate Lotion 25% Bottles","Bottles","9/9/2027",16,44,"LOT-2027-7068",-7.79996,35.60109],[110,"Morogoro Health Centre 025","Health Centre","Depo-Provera 150mg/ml Vials","Vials","8/19/2025",2495,885,"LOT-2024-9196",-6.89313,37.599],[111,"Kilosa Health Centre 028","Health Centre","Cotrimoxazole 480mg Tablets","Tablets","2/2/2026",65,39,"LOT-2026-7763",-6.75463,37.0088],[112,"Kilosa District Hospital 016","District Hospital","Depo-Provera 150mg/ml Vials","Vials","6/19/2027",392,419,"LOT-2026-2010",-6.87518,36.91955],[113,"Iringa Dispensary 024","Dispensary","Ceftriaxone 1g Vials","Vials","7/8/2029",8,13,"LOT-2029-1363",-7.79563,35.60162],[114,"Morogoro Dispensary 066","Dispensary","Diazepam 5mg/ml Ampoules","Ampoules","5/5/2028",8,16,"LOT-2028-6822",-6.79489,37.65156],[115,"Bagamoyo Health Centre 055","Health Centre","Benzyl Benzoate Lotion 25% Bottles","Bottles","4/30/2025",914,452,"LOT-2024-4401",-6.45366,38.98653],[116,"Morogoro Health Centre 025","Health Centre","Oral Rehydration Salts 20.5g Sachets","Sachets","2/21/2029",329,300,"LOT-2029-9467",-6.89313,37.599],[117,"Ifakara Dispensary 060","Dispensary","Cotrimoxazole 480mg Tablets","Tablets","3/7/2028",626,297,"LOT-2028-4603",-8.13722,36.63714],[118,"Mvomero Dispensary 053","Dispensary","Chlorhexidine Gel 7.1% Tubes","Tubes","1/21/2026",44,24,"LOT-2025-9606",-6.3182,37.61024],[119,"Korogwe Dispensary 020","Dispensary","Salbutamol Inhaler 100mcg Inhalers","Inhalers","7/6/2029",1200,237,"LOT-2028-4117",-5.07921,38.53724],[120,"Newala Health Centre 032","Health Centre","Albendazole 400mg Tablets","Tablets","11/28/2028",767,160,"LOT-2028-5092",-10.94242,39.35615],[121,"Bagamoyo Health Centre 093","Health Centre","Salbutamol Inhaler 100mcg Inhalers","Inhalers","11/15/2027",353,215,"LOT-2026-3863",-6.3747,38.8448],[122,"Ifakara District Hospital 051","District Hospital","Folic Acid 5mg Tablets","Tablets","3/20/2029",465,244,"LOT-2028-9678",-8.08051,36.63654],[123,"Kilosa Dispensary 052","Dispensary","Ringer's Lactate 500ml Bottles","Bottles","6/10/2026",413,185,"LOT-2026-7597",-6.76599,36.99882],[124,"Njombe Dispensary 080","Dispensary","Tetracycline Eye Ointment 1% Tubes","Tubes","2/3/2026",570,129,"LOT-2026-1369",-9.3691,34.68409],[125,"Mvomero Dispensary 086","Dispensary","Vitamin A 100000IU Capsules","Capsules","6/16/2025",554,237,"LOT-2025-9672",-6.41053,37.5439],[126,"Mvomero Dispensary 086","Dispensary","Doxycycline 100mg Capsules","Capsules","9/16/2028",119,44,"LOT-2027-1978",-6.41053,37.5439],[127,"Korogwe Dispensary 092","Dispensary","Amoxicillin 250mg Tablets","Tablets","8/20/2029",132,79,"LOT-2029-8942",-5.1018,38.48107],[128,"Korogwe District Hospital 095","District Hospital","Amoxicillin 250mg Tablets","Tablets","6/14/2025",1304,214,"LOT-2025-8438",-5.23646,38.40559],[129,"Korogwe Health Centre 036","Health Centre","Gentamicin 40mg/ml Vials","Vials","12/31/2026",278,115,"LOT-2025-1652",-5.13382,38.38393],[130,"Bagamoyo Health Centre 055","Health Centre","Artemether/Lumefantrine 20/120mg Tablets","Tablets","5/4/2027",125,72,"LOT-2026-3226",-6.45366,38.98653],[131,"Tunduru District Hospital 073","District Hospital","Normal Saline 1000ml Bottles","Bottles","8/17/2029",534,394,"LOT-2029-9941",-10.99993,37.357],[132,"Kilosa Health Centre 060","Health Centre","Doxycycline 100mg Capsules","Capsules","1/30/2026",170,105,"LOT-2025-8215",-6.90049,36.93532],[133,"Kibaha Dispensary 070","Dispensary","Artesunate 60mg Vials","Vials","3/30/2028",123,67,"LOT-2027-3483",-6.75802,38.85924],[134,"Handeni Dispensary 048","Dispensary","Oxytocin 10IU/ml Ampoules","Ampoules","1/23/2029",27,25,"LOT-2029-5607",-5.46999,37.99087],[135,"Iringa Dispensary 047","Dispensary","Magnesium Sulphate 500mg/ml Ampoules","Ampoules","5/28/2026",157,121,"LOT-2025-3871",-7.71542,35.73241],[136,"Handeni Dispensary 048","Dispensary","Ringer's Lactate 500ml Bottles","Bottles","6/20/2026",9,20,"LOT-2026-6291",-5.46999,37.99087],[137,"Mvomero Dispensary 053","Dispensary","Oxytocin 10IU/ml Ampoules","Ampoules","8/7/2027",17,21,"LOT-2027-1791",-6.3182,37.61024],[138,"Korogwe Health Centre 075","Health Centre","Doxycycline 100mg Capsules","Capsules","12/28/2026",392,234,"LOT-2026-7607",-5.08615,38.50603],[139,"Same Dispensary 061","Dispensary","Amoxicillin 500mg Capsules","Capsules","4/8/2026",590,138,"LOT-2026-7255",-4.04737,37.76501],[140,"Masasi Health Centre 053","Health Centre","Paracetamol 500mg Tablets","Tablets","7/2/2028",64,193,"LOT-2028-6620",-10.62914,38.79686],[141,"Kilombero Health Centre 041","Health Centre","Tetracycline Eye Ointment 1% Tubes","Tubes","11/7/2025",93,132,"LOT-2025-7169",-8.08148,36.61826],[142,"Mbeya Dispensary 063","Dispensary","Artemether/Lumefantrine 20/120mg Tablets","Tablets","5/28/2025",50,56,"LOT-2025-2013",-8.91277,33.48777],[143,"Same Dispensary 032","Dispensary","ORS + Zinc Co-pack combo Sachets","Sachets","9/12/2026",60,37,"LOT-2025-9667",-4.15596,37.79758],[144,"Bagamoyo Health Centre 055","Health Centre","Vitamin A 100000IU Capsules","Capsules","4/3/2025",48,85,"LOT-2024-3298",-6.45366,38.98653],[145,"Newala District Hospital 067","District Hospital","Gentamicin 40mg/ml Vials","Vials","12/16/2028",401,101,"LOT-2027-8975",-10.96951,39.33877],[146,"Newala Dispensary 012","Dispensary","Normal Saline 1000ml Bottles","Bottles","4/5/2028",26,17,"LOT-2027-9895",-11.03056,39.32505],[147,"Handeni Health Centre 049","Health Centre","Ringer's Lactate 500ml Bottles","Bottles","2/15/2026",9908,639,"LOT-2026-5661",-5.54805,38.08259],[148,"Kilombero Dispensary 065","Dispensary","Ciprofloxacin 500mg Tablets","Tablets","9/3/2028",174,97,"LOT-2027-7726",-8.16556,36.68716],[149,"Handeni Health Centre 049","Health Centre","Paracetamol 500mg Tablets","Tablets","9/28/2026",777,296,"LOT-2025-8234",-5.54805,38.08259],[150,"Korogwe Health Centre 075","Health Centre","Depo-Provera 150mg/ml Vials","Vials","9/11/2025",170,72,"LOT-2025-5617",-5.08615,38.50603],[151,"Lindi Health Centre 086","Health Centre","Metronidazole 200mg Tablets","Tablets","2/14/2026",1085,276,"LOT-2025-2461",-10.00707,39.77958],[152,"Korogwe Health Centre 074","Health Centre","Amoxicillin 500mg Capsules","Capsules","9/30/2027",57,63,"LOT-2027-2898",-5.18334,38.38592],[153,"Handeni District Hospital 009","District Hospital","Depo-Provera 150mg/ml Vials","Vials","8/2/2025",1933,847,"LOT-2024-3912",-5.46917,38.04092],[154,"Mwanga Health Centre 079","Health Centre","Tetracycline Eye Ointment 1% Tubes","Tubes","1/12/2027",131,99,"LOT-2027-1240",-3.81736,37.64765],[155,"Same Dispensary 090","Dispensary","Ibuprofen 400mg Tablets","Tablets","9/28/2028",19,13,"LOT-2027-2701",-4.09393,37.75421],[156,"Mbeya Health Centre 038","Health Centre","Metronidazole 200mg Tablets","Tablets","9/29/2028",765,452,"LOT-2027-6153",-8.90069,33.48764],[157,"Njombe Health Centre 024","Health Centre","Artesunate 60mg Vials","Vials","2/7/2028",39,35,"LOT-2027-1897",-9.27123,34.8085],[158,"Same District Hospital 079","District Hospital","Vitamin A 100000IU Capsules","Capsules","6/16/2028",2475,1136,"LOT-2028-8474",-4.12438,37.67141],[159,"Korogwe District Hospital 095","District Hospital","Normal Saline 1000ml Bottles","Bottles","12/7/2025",203,265,"LOT-2025-5957",-5.23646,38.40559],[160,"Korogwe Dispensary 020","Dispensary","Zinc Sulphate 20mg Tablets","Tablets","12/14/2025",86,12,"LOT-2025-1058",-5.07921,38.53724],[161,"Mwanga Health Centre 001","Health Centre","Ferrous Sulphate 200mg Tablets","Tablets","9/19/2027",35,71,"LOT-2026-8320",-3.75968,37.64285],[162,"Handeni Dispensary 059","Dispensary","Depo-Provera 150mg/ml Vials","Vials","8/24/2029",30,50,"LOT-2029-2979",-5.38214,37.97975],[163,"Morogoro Health Centre 095","Health Centre","Artesunate 60mg Vials","Vials","1/31/2029",142,112,"LOT-2029-5971",-6.77055,37.67713],[164,"Songea Health Centre 053","Health Centre","Albendazole 400mg Tablets","Tablets","8/3/2028",1156,540,"LOT-2027-6704",-10.64898,35.68672],[165,"Handeni Dispensary 048","Dispensary","Ringer's Lactate 500ml Bottles","Bottles","6/14/2029",40,79,"LOT-2028-8811",-5.46999,37.99087],[166,"Same Dispensary 090","Dispensary","Normal Saline 1000ml Bottles","Bottles","12/18/2028",566,83,"LOT-2028-7274",-4.09393,37.75421],[167,"Handeni District Hospital 055","District Hospital","ORS + Zinc Co-pack combo Sachets","Sachets","1/3/2027",160,435,"LOT-2026-6249",-5.47561,38.12239],[168,"Same Dispensary 022","Dispensary","Benzyl Benzoate Lotion 25% Bottles","Bottles","11/30/2027",20,15,"LOT-2026-9051",-4.02397,37.81285],[169,"Korogwe Health Centre 075","Health Centre","Amoxicillin 250mg Tablets","Tablets","4/6/2025",683,288,"LOT-2024-5163",-5.08615,38.50603],[170,"Mbeya Dispensary 074","Dispensary","Tetracycline Eye Ointment 1% Tubes","Tubes","12/5/2027",83,90,"LOT-2027-8842",-8.97202,33.50113],[171,"Iringa Dispensary 088","Dispensary","Ibuprofen 400mg Tablets","Tablets","8/30/2028",81,124,"LOT-2027-6932",-7.79996,35.60109],[172,"Kilombero Health Centre 041","Health Centre","Tetracycline Eye Ointment 1% Tubes","Tubes","1/30/2029",768,532,"LOT-2029-2257",-8.08148,36.61826],[173,"Same Health Centre 082","Health Centre","Ringer's Lactate 500ml Bottles","Bottles","12/14/2028",510,218,"LOT-2027-6814",-4.01093,37.7235],[174,"Korogwe Dispensary 063","Dispensary","Normal Saline 1000ml Bottles","Bottles","9/15/2027",24,20,"LOT-2027-4514",-5.16217,38.38999],[175,"Bagamoyo Health Centre 003","Health Centre","Insulin (Soluble) 100IU/ml Vials","Vials","8/27/2026",268,73,"LOT-2025-4976",-6.42626,38.87814],[176,"Korogwe Dispensary 065","Dispensary","Magnesium Sulphate 500mg/ml Ampoules","Ampoules","3/3/2027",116,123,"LOT-2026-3368",-5.22783,38.51607],[177,"Korogwe Health Centre 074","Health Centre","Chlorhexidine Gel 7.1% Tubes","Tubes","5/18/2029",394,60,"LOT-2028-8094",-5.18334,38.38592],[178,"Korogwe Dispensary 092","Dispensary","ORS + Zinc Co-pack combo Sachets","Sachets","10/8/2025",37,54,"LOT-2025-2341",-5.1018,38.48107],[179,"Morogoro Dispensary 066","Dispensary","Depo-Provera 150mg/ml Vials","Vials","10/11/2027",1999,119,"LOT-2026-6760",-6.79489,37.65156],[180,"Same Dispensary 032","Dispensary","Oxytocin 10IU/ml Ampoules","Ampoules","9/23/2027",193,16,"LOT-2027-3409",-4.15596,37.79758],[181,"Bagamoyo Health Centre 050","Health Centre","Amoxicillin 500mg Capsules","Capsules","8/22/2027",336,384,"LOT-2026-8275",-6.36356,38.84647],[182,"Mvomero Health Centre 020","Health Centre","ORS + Zinc Co-pack combo Sachets","Sachets","1/19/2028",448,65,"LOT-2027-2013",-6.36236,37.60401],[183,"Mwanga Health Centre 079","Health Centre","Insulin (Soluble) 100IU/ml Vials","Vials","2/15/2029",817,218,"LOT-2028-3725",-3.81736,37.64765],[184,"Korogwe District Hospital 050","District Hospital","Artesunate 60mg Vials","Vials","2/23/2027",835,308,"LOT-2027-5084",-5.08121,38.50341],[185,"Iringa Dispensary 024","Dispensary","Magnesium Sulphate 500mg/ml Ampoules","Ampoules","3/21/2028",1646,266,"LOT-2028-1614",-7.79563,35.60162],[186,"Mvomero Dispensary 086","Dispensary","Amoxicillin 250mg Tablets","Tablets","5/25/2028",29,35,"LOT-2028-2314",-6.41053,37.5439],[187,"Mvomero Health Centre 020","Health Centre","Oxytocin 10IU/ml Ampoules","Ampoules","12/18/2028",138,167,"LOT-2028-3292",-6.36236,37.60401],[188,"Handeni Dispensary 048","Dispensary","Artesunate 60mg Vials","Vials","2/15/2028",101,48,"LOT-2027-3893",-5.46999,37.99087],[189,"Mbeya Dispensary 021","Dispensary","Albendazole 400mg Tablets","Tablets","4/13/2025",71,46,"LOT-2024-8789",-8.98491,33.49705],[190,"Songea District Hospital 015","District Hospital","Normal Saline 1000ml Bottles","Bottles","11/24/2025",179,224,"LOT-2025-5345",-10.65957,35.65393],[191,"Mbeya Dispensary 074","Dispensary","Oral Rehydration Salts 20.5g Sachets","Sachets","7/8/2028",8,32,"LOT-2028-4573",-8.97202,33.50113],[192,"Kibaha Dispensary 070","Dispensary","Amoxicillin 250mg Tablets","Tablets","7/16/2029",37,24,"LOT-2028-9002",-6.75802,38.85924],[193,"Njombe Health Centre 052","Health Centre","Ringer's Lactate 500ml Bottles","Bottles","8/4/2029",50,101,"LOT-2028-3829",-9.3295,34.69372],[194,"Handeni Health Centre 057","Health Centre","Depo-Provera 150mg/ml Vials","Vials","2/1/2028",1888,1770,"LOT-2028-7832",-5.51952,37.99115],[195,"Mvomero Dispensary 086","Dispensary","Doxycycline 100mg Capsules","Capsules","12/3/2026",358,312,"LOT-2026-2203",-6.41053,37.5439],[196,"Iringa Dispensary 087","Dispensary","Cotrimoxazole 480mg Tablets","Tablets","11/22/2027",206,110,"LOT-2027-8253",-7.73768,35.64914],[197,"Handeni Dispensary 048","Dispensary","Oral Rehydration Salts 20.5g Sachets","Sachets","8/2/2026",73,22,"LOT-2025-5275",-5.46999,37.99087],[198,"Lindi Dispensary 015","Dispensary","Tetracycline Eye Ointment 1% Tubes","Tubes","9/21/2027",75,24,"LOT-2027-6362",-9.90461,39.77787],[199,"Handeni Dispensary 059","Dispensary","Ferrous Sulphate 200mg Tablets","Tablets","4/20/2025",85,17,"LOT-2025-1290",-5.38214,37.97975],[200,"Mwanga District Hospital 037","District Hospital","Metronidazole 200mg Tablets","Tablets","4/15/2027",362,86,"LOT-2026-8228",-3.83104,37.47938],[201,"Mvomero Health Centre 049","Health Centre","Artemether/Lumefantrine 20/120mg Tablets","Tablets","11/24/2027",269,178,"LOT-2027-3314",-6.35687,37.71898],[202,"Ifakara Dispensary 007",null,null,null,null,null,null,null,-8.17969,36.72966],[203,"Mbeya Health Centre 012","Health Centre","Paracetamol 500mg Tablets","Tablets","1/15/2027",null,null,"LOT-2025-4471",-8.81349,33.36423],[204,"Songea District Hospital 003","District Hospital","Normal Saline 1000ml Bottles","Bottles","8/1/2028",48500,1200,"LOT-2026-0099",-10.63662,35.63183],[205,"Kyela Dispensary 019","Dispensary","Oxytocin 10IU/ml Ampoules","Ampoules","10/2/2026",0,3,"LOT-2025-0007",-9.66046,33.75369],[206,"Kilombero Disp. 065","Dispensary","Ciprofloxacin 500mg Tablets","Tablets","3/27/2026",183,104,"LOT-2025-4217",-8.2184,36.67099],[207,"Handeni Health Centre 021","Health Centre","Ceftriaxone 1g Vials","Vials","3/24/2025",30,5,"LOT-2023-1001",-5.42107,38.07406],[208,"Same District Hospital 002","District Hospital","Artesunate 60mg Vials","Vials","2/7/2025",12,6,"LOT-2022-0456",-4.05834,37.73447],[209,"Mwanga Dispensary 033, \"Kata B\"","Dispensary","Artemether/Lumefantrine 20/120mg Tablets\n(pack of 24)","Tablets","3/20/2027",220,40,"LOT-2026-2288",-3.85458,37.59644],[210,"Korogwe Health Centre 015 (Kituo cha Afya)","Health Centre","Oral Rehydration Salts 20.5g Sachets \u2014 mfuko wa maji","Sachets","5/11/2027",900,150,"LOT-2026-3391",-5.15883,38.4712],[211,"Bagamoyo Regional Referral Hospital","Regional Hospital","Insulin (Soluble) 100IU/ml Vials","Vials","2/14/2027",60,10,"LOT-2026-0810",-6.5331,38.96307],[212,"Lindi Dispensary 028","Dispensary","Zinc Sulphate 20mg Tablets","Tablets","12/1/2026",50000,25,"LOT-2026-0044",-10.0152,39.64807],[213,"Same Dispensary 032","Dispensary","Amoxicillin 250mg Tablets","Tablets","10/4/2026",54,25,"LOT-2025-4708",-4.15596,37.79758],[214,"Njombe Dispensary 080","Dispensary","Zinc Sulphate 20mg Tablets","Tablets","11/11/2026",175,94,"LOT-2026-9540",-9.3691,34.68409],[215,"Kibaha Dispensary 070","Dispensary","Folic Acid 5mg Tablets","Tablets","10/27/2026",1806,328,"LOT-2025-1524",-6.75802,38.85924],[216,"Kilombero Dispensary 065","Dispensary","Amoxicillin 500mg Capsules","Capsules","10/18/2026",825,171,"LOT-2025-6802",-8.16556,36.68716],[217,"Kilosa Dispensary 082","Dispensary","Insulin (Soluble) 100IU/ml Vials","Vials","10/21/2026",149,65,"LOT-2026-2790",-6.78369,36.98786],[218,"Iringa Dispensary 024","Dispensary","Benzyl Benzoate Lotion 25% Bottles","Bottles","5/31/2028",120,15,"LOT-2028-4402",-7.79563,35.60162],[219,"Iringa Dispensary 047","Dispensary","Benzyl Benzoate Lotion 25% Bottles","Bottles","2/28/2027",400,30,"LOT-2026-4418",-7.71542,35.73241],[220,"Morogoro District Hospital 001","District Hospital","Depo-Provera 150mg/ml Vials","Vials","6/30/2028",7000,900,"LOT-2028-6631",-6.82079,37.62717],[221,"Morogoro Health Centre 095","Health Centre","Depo-Provera 150mg/ml Vials","Vials","1/31/2027",3200,300,"LOT-2026-6649",-6.77055,37.67713],[222,"Iringa Dispensary 087","Dispensary","Magnesium Sulphate 500mg/ml Ampoules","Ampoules","9/30/2028",660,60,"LOT-2028-1677",-7.73768,35.64914],[223,"Masasi Health Centre 053","Health Centre","Folic Acid 5mg Tablets","Tablets","8/31/2027",520,70,"LOT-2027-6718",-10.62914,38.79686],[224,"Mvomero Dispensary 053","Dispensary","ORS + Zinc Co-pack combo Sachets","Sachets","12/31/2026",300,20,"LOT-2026-2051",-6.3182,37.61024]];
+const TZA = [[33.903711,-0.95],[34.07262,-1.05982],[37.69869,-3.09699],[37.7669,-3.67712],[39.20222,-4.67677],[38.74054,-5.90895],[38.79977,-6.47566],[39.44,-6.84],[39.47,-7.1],[39.19469,-7.7039],[39.25203,-8.00781],[39.18652,-8.48551],[39.53574,-9.11237],[39.9496,-10.0984],[40.31659,-10.3171],[39.521,-10.89688],[38.427557,-11.285202],[37.82764,-11.26879],[37.47129,-11.56876],[36.775151,-11.594537],[36.514082,-11.720938],[35.312398,-11.439146],[34.559989,-11.52002],[34.28,-10.16],[33.940838,-9.693674],[33.73972,-9.41715],[32.759375,-9.230599],[32.191865,-8.930359],[31.556348,-8.762049],[31.157751,-8.594579],[30.74,-8.34],[30.2,-7.08],[29.62,-6.52],[29.419993,-5.939999],[29.519987,-5.419979],[29.339998,-4.499983],[29.753512,-4.452389],[30.11632,-4.09012],[30.50554,-3.56858],[30.75224,-3.35931],[30.74301,-3.03431],[30.52766,-2.80762],[30.46967,-2.41383],[30.758309,-2.28725],[30.816135,-1.698914],[30.419105,-1.134659],[30.76986,-1.01455],[31.86617,-1.02736],[33.903711,-0.95]]; // country outline, lon/lat, simplified
+const SNAPSHOT = new Date(2026, 9, 1); // data snapshot date: 1 Oct 2026
+const R = { LOW:3, MAX:6, CHECK:24, MAXKM:80, ROAD:1.4, RATE:5000 };
+// Service-level eligibility: which supplying level may supply which receiving level. [assumed — confirm]
+const LEVELS = ["Regional Hospital","District Hospital","Health Centre","Dispensary"];
+const MAY_SUPPLY = {
+  "Regional Hospital": ["Regional Hospital","District Hospital","Health Centre","Dispensary"],
+  "District Hospital": ["District Hospital","Health Centre","Dispensary"],
+  "Health Centre": ["Health Centre","Dispensary"],
+  "Dispensary": ["Health Centre","Dispensary"]
+};
+const W = { cover:0.5, dist:0.3, expiry:0.2 }; // rule-based score weights
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Math.round(n).toLocaleString("en-US");
+const fmt1 = n => (Math.round(n*10)/10).toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1});
+const tsh = n => "Tsh " + fmt(n);
+const canon = n => n.replace(/\bDisp\.\s+/g, "Dispensary ").replace(/\s+/g," ").trim();
+const parseDate = s => { const [m,d,y] = s.split("/").map(Number); return new Date(y, m-1, d); };
+const fmtDate = d => d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+const monthsBetween = (a,b) => (b - a) / (1000*60*60*24*30.4375);
+function hav(a, b){
+  const toR = x => x*Math.PI/180, Rk = 6371;
+  const dLat = toR(b.lat-a.lat), dLon = toR(b.lon-a.lon);
+  const h = Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLon/2)**2;
+  return 2*Rk*Math.asin(Math.sqrt(h));
+}
+const roadKm = (a,b) => Math.round(hav(a,b)*R.ROAD*10)/10;   // estimated road distance, 0.1 km
+const transport = km => Math.round(km*2*R.RATE);              // return trip
+
+/* ---------- data rules (readiness report fixes 1–4) ---------- */
+const skipped = [], merged = [];
+const facilities = new Map(); // canonical name -> {name, level, lat, lon}
+const rows = [];
+const seen = new Map();
+for (const r of RAW){
+  const [csvRow, fname, level, item, unit, exp, soh, amc, batch, lat, lon] = r;
+  if (!item){ skipped.push({csvRow, fname, why:"Empty apart from facility name and coordinates"}); continue; }
+  const fac = canon(fname);
+  const key = [fac, item, batch, exp, soh].join("|");
+  if (seen.has(key)){ merged.push({csvRow, fname, into: fac, intoRow: seen.get(key)}); continue; }
+  seen.set(key, csvRow);
+  if (!facilities.has(fac)) facilities.set(fac, {name:fac, level: level || null, lat, lon});
+  const expiry = exp ? parseDate(exp) : null;
+  const o = {csvRow, fac, item, unit, batch, expiry, soh, amc, missing: soh==null || amc==null || amc===0};
+  if (!o.missing){
+    o.mos = soh/amc;
+    o.mtx = expiry ? monthsBetween(SNAPSHOT, expiry) : null;
+    o.expired = expiry ? expiry < SNAPSHOT : false;
+    o.unusable = o.expired ? soh : Math.max(0, soh - amc*Math.max(0, o.mtx));
+    if (o.mos > R.CHECK) o.status = "check";
+    else if (soh === 0) o.status = "stockout";
+    else if (o.mos < R.LOW) o.status = "low";
+    else if (o.expired) o.status = "expired";
+    else if (o.mos > R.MAX || o.unusable > 0) o.status = "surplus";
+    else o.status = "ok";
+    o.spare = o.status === "surplus" ? Math.floor(Math.max(soh - R.MAX*amc, o.unusable)) : 0;
+  } else o.status = "missing";
+  rows.push(o);
+}
+const facOf = n => facilities.get(n);
+
+/* ---------- matching (P2): filters, cap, rule-based score ---------- */
+function sourcesFor(need){
+  const recv = facOf(need.fac);
+  const needQty = Math.max(0, Math.ceil(R.MAX*need.amc - need.soh)); // top up to the 6-month maximum
+  const out = [], leftOut = {far:0, level:0, cap:0, expired:0, check:0};
+  let nearestFar = null, nearestStock = null;   // shown only when nothing is in reach; never suggested
+  for (const s of rows){
+    if (s.item !== need.item || s.fac === need.fac) continue;
+    if (s.status === "expired" || (s.expired && s.soh>0)) { leftOut.expired++; continue; }
+    if (s.status === "check") { leftOut.check++; continue; }
+    const src = facOf(s.fac);
+    const km = roadKm(recv, src);
+    if (!s.missing && s.soh > 0 && (!nearestStock || km < nearestStock.km)) nearestStock = {row:s, src, km};
+    if (s.status !== "surplus" || s.spare <= 0) continue;
+    const lvlKnown = src.level && recv.level;
+    if (lvlKnown && !(MAY_SUPPLY[src.level]||[]).includes(recv.level)){ leftOut.level++; continue; }
+    const usable = Math.floor(need.amc * Math.max(0, s.mtx));   // receiving facility can use before this batch expires
+    const offer = Math.min(s.spare, usable, needQty);
+    if (offer <= 0){ leftOut.cap++; continue; }
+    if (km > R.MAXKM){ leftOut.far++; if (!nearestFar || km < nearestFar.km) nearestFar = {row:s, src, km, cost:transport(km), offer}; continue; }
+    const cover = needQty ? offer/needQty : 0;
+    const urgency = s.mtx <= 6 ? 1 : s.mtx <= 12 ? 0.5 : 0;
+    const score = W.cover*cover + W.dist*(1 - km/R.MAXKM) + W.expiry*urgency;
+    out.push({id:"", row:s, src, km, cost:transport(km), offer, usable, needQty, cover, urgency, score, levelUnknown:!lvlKnown});
+  }
+  out.sort((a,b)=> b.score - a.score);
+  out.forEach((c,i)=> c.id = "S"+(i+1));
+  return {list:out, leftOut, needQty, nearestFar, nearestStock};
+}
+const needRows = rows.filter(r => r.status==="stockout" || r.status==="low");
+const matchCache = new Map();
+const match = r => { if(!matchCache.has(r.csvRow)) matchCache.set(r.csvRow, sourcesFor(r)); return matchCache.get(r.csvRow); };
+const bestCount = f => Math.max(0, ...needRows.filter(r => r.fac===f).map(r => match(r).list.length));
+const facsWithSource = [...new Set(needRows.filter(r => match(r).list.length).map(r => r.fac))]
+  .sort((a,b)=> bestCount(b)-bestCount(a) || a.localeCompare(b));
+
+/* ---------- state ---------- */
+const state = {
+  tab: "alerts",
+  fac: facsWithSource[0] || [...facilities.keys()].sort()[0],
+  role: "staff",
+  alertRow: null,      // csvRow of the alert being acted on
+  pick: null,          // chosen candidate id for request
+  ai: {},              // csvRow -> {status, order, reasons, note}
+  requests: [],
+  store: "loading",    // loading | shared | local
+  canWrite: true,
+  draftQty: null,
+  noteDrafts: {}       // unsent edits to pickup messages, kept in this tab until sent
+};
+try { const s = JSON.parse(localStorage.getItem("sdp-acting-as-v2")||"null"); if (s && facilities.has(s.fac)) { state.fac = s.fac; state.role = s.role || "staff"; } } catch(e){}
+function rememberActing(){ try { localStorage.setItem("sdp-acting-as-v2", JSON.stringify({fac:state.fac, role:state.role})); } catch(e){} }
+
+/* ---------- shared request storage (P3/P4) ---------- */
+let col = null;
+const local = new Map();
+async function initStore(){
+  const use = window.claude && window.claude.use ? window.claude.use.bind(window.claude) : null;
+  let db = null, user = null;
+  try { db = use ? await use("db") : null; } catch(e){ db = null; }
+  try { user = use ? await use("user") : null; } catch(e){ user = null; }
+  if (user){ try { const c = await user.can("data.write"); if (c === false) state.canWrite = false; } catch(e){} }
+  if (!db){ state.store = "local"; render(); return; }
+  try {
+    col = db.collection("requests");
+    col.onSnapshot(snap => {
+      state.requests = snap.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b)=> (b.created||0)-(a.created||0));
+      state.store = "shared"; render();
+    }, err => { col = null; state.store = "local"; render(); });
+  } catch(e){ col = null; state.store = "local"; render(); }
+}
+function syncLocal(){ state.requests = [...local.values()].sort((a,b)=> (b.created||0)-(a.created||0)); render(); }
+async function addRequest(data){
+  if (col){ try { const ref = await col.add(data); return ref.id; } catch(e){ return failWrite(e); } }
+  const id = "r" + Date.now().toString(36); local.set(id, {id, ...data}); syncLocal(); return id;
+}
+async function patchRequest(id, patch){
+  const cur = state.requests.find(r => r.id===id); if (!cur) return;
+  const next = {...patch, log: [...(cur.log||[]), patch._log].filter(Boolean)}; delete next._log;
+  if (col){ try { await col.doc(id).update(next); } catch(e){ failWrite(e); } return; }
+  local.set(id, {...local.get(id), ...next}); syncLocal();
+}
+function failWrite(e){
+  if (e && e.code === "invalid_argument") state.canWrite = false;
+  toast(e && e.code === "quota_exceeded" ? "Storage is full, so the request was not saved." : "The request could not be saved. Try again in a moment.");
+  render(); return null;
+}
+let toastTimer;
+function toast(msg){ let t = $("#toast"); if(!t){ t=document.createElement("div"); t.id="toast"; t.setAttribute("role","status");
+  t.style.cssText="position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--brand);color:var(--on-brand);padding:8px 16px;border-radius:var(--radius-sm);font-weight:600;font-size:13px;z-index:50;max-width:90vw"; document.body.appendChild(t);} 
+  t.textContent = msg; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.hidden=true, 3200); }
+
+/* ---------- Claude ranking (P2 · the judgment) ---------- */
+let samplePromise = null;
+function getSample(){ if (!samplePromise){ const use = window.claude && window.claude.use; samplePromise = use ? window.claude.use("sample").catch(()=>null) : Promise.resolve(null); } return samplePromise; }
+async function askClaude(need){
+  const key = need.csvRow; const m = match(need);
+  if (!m.list.length || state.ai[key]?.status === "thinking" || state.ai[key]?.status === "done") return;
+  state.ai[key] = {status:"thinking"}; render();
+  const sample = await getSample();
+  if (!sample){ state.ai[key] = {status:"off", note:"Claude isn't available in this view, so the rule-based order is shown."}; render(); return; }
+  const recv = facOf(need.fac);
+  const lines = m.list.map(c => `${c.id}: level ${c.src.level||"unknown"}; spare ${c.row.spare} ${need.unit}; can offer ${c.offer} (capped so the receiver uses it before expiry and stays at or under ${R.MAX} months); estimated road distance ${c.km} km; return transport cost ${c.cost} Tsh; this batch expires in ${fmt1(c.row.mtx)} months; source holds ${fmt1(c.row.mos)} months of stock.`).join("\n");
+  const prompt = `You help staff at a health facility in Tanzania choose which nearby facility to ask for a commodity they are short of. Weigh the trade-offs: covering the need, distance and transport cost, and taking stock that would otherwise expire unused at the source.
+
+Commodity: ${need.item}
+Receiving facility: level ${recv.level||"unknown"}; ${fmt1(need.mos)} months of stock; needs ${m.needQty} ${need.unit} to reach ${R.MAX} months; uses ${need.amc} a month.
+
+Candidate sources (already filtered: within ${R.MAXKM} km, allowed by level, not expired):
+${lines}
+
+Rule-based order (weighted score): ${m.list.map(c=>c.id).join(", ")}
+
+Return JSON only, no other text: {"order":["S1",...every candidate id exactly once],"reasons":{"S1":"..."}}.
+Each reason is ONE plain sentence of at most 25 words saying why this source sits where it does, written for facility staff. Do not write any digits or numbers in the reasons; describe qualities instead (closer, more spare stock, expires sooner, covers the full need). Reorder only where the trade-off justifies it.`;
+  try {
+    const out = await sample.json(prompt, {modelTier:"quick"});
+    const ids = m.list.map(c=>c.id);
+    let order = Array.isArray(out?.order) ? out.order.filter(x => ids.includes(x)) : [];
+    let note = "";
+    if (order.length !== ids.length || new Set(order).size !== ids.length){ order = ids; note = "Claude's order was incomplete, so the rule-based order is shown."; }
+    const reasons = {}; let stripped = false;
+    for (const c of m.list){
+      const t = String(out?.reasons?.[c.id] || "").trim();
+      if (!t || /\d/.test(t)){ reasons[c.id] = templateReason(c, m.list); if (t) stripped = true; }
+      else reasons[c.id] = t;
+    }
+    if (stripped) note = (note ? note+" " : "") + "One of Claude's sentences contained figures, so the tool's own reason replaces it.";
+    state.ai[key] = {status:"done", order, reasons, note};
+  } catch(e){
+    const msg = e?.code === "not_granted" ? "Claude was not allowed in this view, so the rule-based order is shown."
+      : e?.code === "rate_limited" ? "Claude is busy. The rule-based order is shown; try again in a minute."
+      : "Claude didn't answer, so the rule-based order is shown.";
+    state.ai[key] = {status:"error", note:msg, retry: e?.code !== "not_granted"};
+  }
+  render();
+}
+function templateReason(c, list){
+  const parts = [];
+  if (c.cover >= 0.999) parts.push("covers the full need"); else parts.push("covers part of the need");
+  const minKm = Math.min(...list.map(x=>x.km)); if (c.km === minKm) parts.push("is the closest option");
+  if (c.urgency === 1) parts.push("takes stock that expires soon at the source");
+  return "Tool's reason: " + parts.join(", ") + ".";
+}
+
+/* ---------- rendering ---------- */
+const TABS = [["alerts","Alerts"],["sugg","Suggestions"],["req","Request and approval"],["xfer","Transfer"]];
+function myRequests(){ return state.requests.filter(r => r.toFac===state.fac || r.fromFac===state.fac); }
+function pendingFor(tab){
+  const mine = myRequests();
+  if (tab==="req") return mine.filter(r => (r.fromFac===state.fac && ((state.role==="staff" && r.status==="sent") || (state.role==="incharge" && r.status==="accepted")))).length;
+  if (tab==="xfer") return mine.filter(r => r.status==="approved" && r.transfer!=="received").length;
+  return 0;
+}
+function renderTabs(){
+  $("#tabs").innerHTML = TABS.map(([k,l],i)=>{
+    const b = pendingFor(k);
+    return `<button class="tab" role="tab" aria-selected="${state.tab===k}" data-tab="${k}"><span class="n">${i+1}</span>${l}${b?`<span class="badge" aria-label="${b} waiting">${b}</span>`:""}</button>`;
+  }).join("");
+}
+function renderActing(){
+  const sel = $("#asFac");
+  if (!sel.options.length){
+    const names = [...facilities.keys()].sort();
+    sel.innerHTML = names.map(n=>`<option>${esc(n)}</option>`).join("");
+  }
+  sel.value = state.fac; $("#asRole").value = state.role;
+}
+function gauge(o){
+  const max = 12, v = Math.min(o.mos, max), pct = x => (x/max*100)+"%";
+  const col = o.status==="stockout" ? "var(--low)" : o.status==="low" ? "var(--warn)" : o.status==="surplus" ? "var(--sur)" : "var(--text-2)";
+  return `<div class="gauge" aria-hidden="true"><div class="track"></div><div class="band" style="left:${pct(R.LOW)};width:${pct(R.MAX-R.LOW)}"></div>
+    <div class="mark" style="left:${pct(v)};background:${col}"></div>${o.mos>max?`<span class="over" style="color:${col}">›</span>`:""}</div>
+    <div class="gscale" aria-hidden="true"><span style="left:0">0</span><span style="left:${pct(R.LOW)}">${R.LOW}</span><span style="left:${pct(R.MAX)}">${R.MAX}</span><span>12+ months</span></div>`;
+}
+const STATUS_TEXT = {stockout:"Stock-out", low:"Low", surplus:"Surplus", expired:"Expired", check:"Check quantity", missing:"Data missing", ok:"OK"};
+function statusClass(s){ return s==="stockout" ? "out" : s==="low" ? "low" : s==="surplus" ? "sur" : "other"; }
+
+function viewAlerts(){
+  const f = facOf(state.fac);
+  const mine = rows.filter(r => r.fac===state.fac);
+  const needs = mine.filter(r => r.status==="stockout"||r.status==="low").sort((a,b)=> (a.soh===0?-1:0)-(b.soh===0?-1:0) || a.mos-b.mos);
+  const others = mine.filter(r => !["stockout","low","ok"].includes(r.status));
+  const ok = mine.filter(r => r.status==="ok");
+  const card = o => {
+    const sc = statusClass(o.status);
+    let detail = "", act = "";
+    if (o.status==="missing") detail = `<div class="meta">Can't calculate — stock on hand or monthly consumption is missing in EMR.</div>`;
+    else {
+      detail = `${gauge(o)}<div class="meta">${fmt(o.soh)} ${esc(o.unit)} in stock, uses ${fmt(o.amc)} a month, <b>${fmt1(o.mos)} months of stock</b>. Batch ${esc(o.batch)} expires ${fmtDate(o.expiry)}${o.expired?" (already expired)":""}.</div>`;
+    }
+    if (sc==="low"||sc==="out"){
+      const m = match(o);
+      detail += m.list.length ? `<div class="source yes">Source within ${R.MAXKM} km: ${m.list.length} ${m.list.length>1?"facilities":"facility"}</div>`
+        : `<div class="source no">No nearby facility can spare this.</div>`;
+      act = `<div class="act"><button class="btn${m.list.length?"":" sec"}" data-open="${o.csvRow}">${m.list.length?"See sources":"See why"}</button></div>`;
+    } else if (o.status==="surplus"){
+      detail += `<div class="source no">${fmt(o.spare)} ${esc(o.unit)} could be spared. Offering it to others is not part of this prototype.</div>`;
+    } else if (o.status==="expired"){
+      detail += `<div class="source no">Expired — not available to redistribute.</div>`;
+    } else if (o.status==="check"){
+      detail += `<div class="source no">Above ${R.CHECK} months of stock. Not suggested to others until someone confirms the quantity.</div>`;
+    }
+    return `<div class="alert ${sc}"><div><div class="row"><span class="status ${sc}">${STATUS_TEXT[o.status]}</span><span class="item">${esc(o.item)}</span></div>${detail}</div>${act}</div>`;
+  };
+  const dupNote = merged.filter(m => m.into===state.fac).length ? `<div class="hint">EMR holds a duplicate record of this facility under an abbreviated name. It has been merged here, so it is never suggested as a separate source.</div>` : "";
+  return `<h1>Alerts for ${esc(state.fac)}</h1><div class="rule"></div>
+  <p class="lede">${esc(f.level||"Level unknown")}. Commodities flagged from the EMR stock snapshot of ${fmtDate(SNAPSHOT)}. Pick a low or stocked-out item to find a nearby facility that can spare it.</p>
+  <div class="legend" aria-label="How items are flagged">
+    <span><span class="dot" style="background:var(--low)"></span><b>Stock-out</b> 0 in stock</span>
+    <span><span class="dot" style="background:var(--warn)"></span><b>Low</b> below ${R.LOW} months</span>
+    <span><span class="dot" style="background:var(--band)"></span><b>Target</b> ${R.LOW}–${R.MAX} months</span>
+    <span><span class="dot" style="background:var(--sur)"></span><b>Surplus</b> above ${R.MAX} months, or won't be used before expiry</span>
+    <span><b>Check quantity</b> above ${R.CHECK} months</span>
+    <span class="muted">Months of stock = stock on hand ÷ average monthly consumption</span>
+  </div>
+  ${dupNote}
+  ${facsWithSource.length ? `<div class="hint">In this synthetic data, only these facilities have a low item with a source within ${R.MAXKM} km:<div class="chips">${facsWithSource.map(n=>`<button class="chip" data-fac="${esc(n)}">${esc(n)} (${bestCount(n)} ${bestCount(n)>1?"sources":"source"})</button>`).join("")}</div></div>`:""}
+  <h2>Needs action (${needs.length})</h2>
+  <div class="alerts">${needs.length? needs.map(card).join("") : `<div class="empty"><strong>Nothing is low or stocked out here.</strong>Choose another facility under “Acting as”.</div>`}</div>
+  ${others.length?`<h2>Other flags (${others.length})</h2><div class="alerts">${others.map(card).join("")}</div>`:""}
+  ${ok.length?`<p class="muted small" style="margin-top:var(--space-3)">${ok.length} other ${ok.length>1?"items are":"item is"} within ${R.LOW}–${R.MAX} months.</p>`:""}
+  ${aboutPanel()}`;
+}
+
+function mapSvg(need, list, order){
+  const recv = facOf(need.fac);
+  const W_ = 360, H_ = 300, cx = W_/2, cy = H_/2;
+  const ringKm = R.MAXKM / R.ROAD;            // 50 km road ≈ 35.7 km straight
+  const pxPerKm = (H_/2 - 18) / ringKm;
+  const kx = 111.32*Math.cos(recv.lat*Math.PI/180), ky = 110.57;
+  const P0 = f => [cx + (f.lon-recv.lon)*kx*pxPerKm, cy - (f.lat-recv.lat)*ky*pxPerKm];
+  const P = f => { let [x,y] = P0(f); const dx=x-cx, dy=y-cy, d=Math.hypot(dx,dy);   // keep very close points visible next to the diamond
+    if (d < 20){ const a = d ? Math.atan2(dy,dx) : -Math.PI/4; x = cx + 20*Math.cos(a); y = cy + 20*Math.sin(a); } return [x,y]; };
+  const r = ringKm*pxPerKm;
+  const nearby = [...facilities.values()].filter(f => f.name!==recv.name && hav(recv,f) <= ringKm*1.25);
+  const rankOf = id => order.indexOf(id)+1;
+  let g = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--tint)" stroke="var(--brand)" stroke-dasharray="4 4"/>`;
+  g += `<text x="${cx}" y="${cy-r-5}" text-anchor="middle" font-size="10" fill="var(--text-2)">${R.MAXKM} km estimated road distance</text>`;
+  g += nearby.map(f=>{const [x,y]=P(f); return `<circle cx="${x}" cy="${y}" r="3" fill="var(--muted-dot)"/>`}).join("");
+  list.forEach(c=>{ const [x,y]=P(c.src); g += `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--brand)" stroke-width="1.2" opacity=".6"/>`; });
+  list.forEach(c=>{ const [x,y]=P(c.src); const k = rankOf(c.id);
+    g += `<circle cx="${x}" cy="${y}" r="11" fill="var(--brand)" stroke="var(--panel)" stroke-width="2"/><text x="${x}" y="${y+4}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--on-brand)">${k}</text>`; });
+  g += `<rect x="${cx-7}" y="${cy-7}" width="14" height="14" fill="var(--act)" stroke="var(--panel)" stroke-width="2" transform="rotate(45 ${cx} ${cy})"/>`;
+  // inset: Tanzania outline
+  const minLon=29.2,maxLon=40.6,minLat=-11.9,maxLat=-0.9, iw=78, ih=iw*(maxLat-minLat)/(maxLon-minLon), ix=W_-iw-6, iy=6;
+  const IP = (lon,lat)=>[ix+(lon-minLon)/(maxLon-minLon)*iw, iy+(maxLat-lat)/(maxLat-minLat)*ih];
+  const path = TZA.map(([lo,la],i)=>{const [x,y]=IP(lo,la);return (i?"L":"M")+x.toFixed(1)+" "+y.toFixed(1)}).join(" ")+"Z";
+  const [px,py] = IP(recv.lon, recv.lat);
+  g += `<rect x="${ix-4}" y="${iy-4}" width="${iw+8}" height="${ih+8}" fill="var(--panel)" stroke="var(--line)" rx="3"/><path d="${path}" fill="var(--alt)" stroke="var(--text-2)" stroke-width=".8"/><circle cx="${px}" cy="${py}" r="3.5" fill="var(--act)"/>`;
+  return `<svg viewBox="0 0 ${W_} ${H_}" role="img" aria-label="Plot of ${esc(recv.name)} and ${list.length} suggested source${list.length===1?"":"s"} within ${R.MAXKM} km">${g}</svg>`;
+}
+
+function viewSugg(){
+  const need = rows.find(r => r.csvRow===state.alertRow);
+  if (!need || need.fac!==state.fac) return `<h1>Suggestions</h1><div class="rule"></div><div class="empty"><strong>Pick an alert first.</strong>Go to Alerts, choose a low or stocked-out item and press “See sources”.<div style="margin-top:var(--space-2)"><button class="btn" data-tab="alerts">Go to Alerts</button></div></div>`;
+  const m = match(need), ai = state.ai[need.csvRow] || {};
+  const ruleOrder = m.list.map(c=>c.id);
+  const order = ai.status==="done" ? ai.order : ruleOrder;
+  const byId = Object.fromEntries(m.list.map(c=>[c.id,c]));
+  const head = `<h1>Sources for ${esc(need.item)}</h1><div class="rule"></div>
+   <div class="need"><div class="facts">
+     <div><div class="k">Receiving facility</div><div class="v">${esc(need.fac)}</div></div>
+     <div><div class="k">Months of stock</div><div class="v">${fmt1(need.mos)}</div></div>
+     <div><div class="k">Needed to reach ${R.MAX} months</div><div class="v">${fmt(m.needQty)} ${esc(need.unit)}</div></div>
+   </div><div><button class="btn sec" data-tab="alerts">Back to alerts</button></div></div>`;
+  const lo = m.leftOut, loItems = [
+    lo.far && `${lo.far} that could supply but ${lo.far>1?"are":"is"} beyond ${R.MAXKM} km`,
+    lo.level && `${lo.level} not allowed to supply this facility's level`,
+    lo.cap && `${lo.cap} whose stock this facility couldn't use before it expires`,
+    lo.expired && `${lo.expired} holding only expired stock`,
+    lo.check && `${lo.check} flagged “check quantity”`].filter(Boolean);
+  const leftOut = loItems.length ? `<ul class="left-out">${loItems.map(t=>`<li>Left out: ${t}.</li>`).join("")}</ul>` : "";
+  if (!m.list.length){
+    const nf = m.nearestFar, ns = m.nearestStock;
+    let nearest = "";
+    if (nf) nearest += `<div class="card" style="margin-top:var(--space-2)"><div class="small muted">Nearest facility that could spare it, beyond the ${R.MAXKM} km limit. Shown for information, not suggested.</div>
+      <h3 style="margin-top:4px">${esc(nf.src.name)}</h3><div class="small muted">${esc(nf.src.level||"Level unknown")}</div>
+      <div class="figs">
+        <div class="fig"><div class="k">Could offer</div><div class="v">${fmt(nf.offer)} ${esc(need.unit)}</div><div class="s">${fmt(nf.row.soh)} in stock, ${fmt1(nf.row.mos)} months; batch expires ${fmtDate(nf.row.expiry)}</div></div>
+        <div class="fig"><div class="k">Estimated road distance</div><div class="v">${fmt1(nf.km)} km</div><div class="s">straight line × ${R.ROAD} <span class="tag">estimate</span></div></div>
+        <div class="fig"><div class="k">Transport cost</div><div class="v">${tsh(nf.cost)}</div><div class="s">${fmt1(nf.km)} km × 2 (return) × ${tsh(R.RATE)}/km</div></div>
+      </div></div>`;
+    if (ns && (!nf || ns.src.name !== nf.src.name)) nearest += `<div class="card" style="margin-top:var(--space-2)"><div class="small muted">Nearest facility holding usable stock of this item${nf?"":" anywhere"}. It has none to spare: giving any would leave it short.</div>
+      <h3 style="margin-top:4px">${esc(ns.src.name)}</h3><div class="small muted">${esc(ns.src.level||"Level unknown")}</div>
+      <div class="figs">
+        <div class="fig"><div class="k">Their stock</div><div class="v">${fmt(ns.row.soh)} ${esc(need.unit)}</div><div class="s">${fmt1(ns.row.mos)} months; batch expires ${fmtDate(ns.row.expiry)}</div></div>
+        <div class="fig"><div class="k">Estimated road distance</div><div class="v">${fmt1(ns.km)} km</div><div class="s">straight line × ${R.ROAD} <span class="tag">estimate</span></div></div>
+      </div></div>`;
+    if (!nf && !ns) nearest = `<p class="small muted" style="margin-top:var(--space-2)">No other facility in the data holds usable stock of this item.</p>`;
+    return head + `<div class="empty"><strong>No nearby facility can spare this.</strong>No facility within ${R.MAXKM} km estimated road distance holds usable surplus of ${esc(need.item)}. Use the usual resupply route.${leftOut}</div>${nearest}`;
+  }
+
+  let aiBlock;
+  if (ai.status==="thinking" || !ai.status) aiBlock = `<span class="thinking"><i></i><i></i><i></i> Claude is weighing the options…</span>`;
+  else if (ai.status==="done"){
+    const same = order.join()===ruleOrder.join();
+    aiBlock = `<div class="orders"><div><b>Rule-based order</b><ol>${ruleOrder.map(id=>`<li>${esc(byId[id].src.name)}</li>`).join("")}</ol></div>
+      <div><b>Claude's order</b><ol>${order.map(id=>`<li>${esc(byId[id].src.name)}</li>`).join("")}</ol></div>
+      <div class="agree">${m.list.length===1?"Only one facility qualifies, so there is nothing to reorder; Claude explains it.": same?"Claude agrees with the rule-based order.":"Claude reorders these. Read its reasons below before choosing."}</div></div>${ai.note?`<p class="small muted">${esc(ai.note)}</p>`:""}`;
+  } else aiBlock = `<p class="small muted">${esc(ai.note||"")}</p>${ai.retry?`<button class="btn sec" data-retry="${need.csvRow}">Ask Claude again</button>`:""}`;
+
+  const cards = order.map((id,i)=>{
+    const c = byId[id], ruleRank = ruleOrder.indexOf(id)+1;
+    const reason = ai.status==="done" ? `<div class="reason"><span class="who">Claude:</span> ${esc(ai.reasons[id])}</div>` : ai.status==="thinking"||!ai.status ? "" : `<div class="reason">${esc(templateReason(c,m.list))}</div>`;
+    return `<article class="card${i===0?" top1":""}">
+      <div class="head"><span class="rank" aria-label="Rank ${i+1}">${i+1}</span><div style="flex:1">
+        <h3>${esc(c.src.name)}</h3><div class="small muted">${esc(c.src.level||"Level unknown")}. Rule-based rank ${ruleRank}.</div></div></div>
+      <div class="figs">
+        <div class="fig"><div class="k">Can offer</div><div class="v">${fmt(c.offer)} ${esc(need.unit)}</div><div class="s">of ${fmt(c.row.spare)} spare; capped to what you use before expiry and your ${R.MAX}-month maximum</div></div>
+        <div class="fig"><div class="k">Their stock</div><div class="v">${fmt(c.row.soh)}</div><div class="s">${fmt1(c.row.mos)} months; batch expires ${fmtDate(c.row.expiry)}</div></div>
+        <div class="fig"><div class="k">Estimated road distance</div><div class="v">${fmt1(c.km)} km</div><div class="s">straight line × ${R.ROAD} <span class="tag">estimate</span></div></div>
+        <div class="fig"><div class="k">Transport cost</div><div class="v">${tsh(c.cost)}</div><div class="s">${fmt1(c.km)} km × 2 (return) × ${tsh(R.RATE)}/km</div></div>
+      </div>
+      <div class="small muted">Commodity value not included: unit costs not available yet.</div>
+      ${reason}
+      <div class="row" style="margin-top:var(--space-2)"><button class="btn" data-pick="${id}" ${state.canWrite?"":"disabled"}>Request from this facility</button></div>
+    </article>`;
+  }).join("");
+  return head + `<div class="row" style="margin-bottom:var(--space-2)"><span class="tag ai">Ranked with Claude</span><span class="small muted">Every figure comes from the tool's own calculation; Claude only orders the list and writes the reason.</span></div>
+   ${aiBlock}
+   <div class="sgrid"><div class="cards">${cards}${leftOut}</div>
+   <div class="mapbox">${mapSvg(need, m.list, order)}<div class="mapcap">Facility coordinates plotted as points; a source very close by is drawn just outside the diamond. Diamond: ${esc(need.fac)}. Numbered: suggested sources. Grey: other facilities nearby. No map tiles.</div></div></div>`;
+}
+
+const REQ_STEPS = [["sent","Request sent"],["accepted","Supplier confirms and accepts"],["approved","Supplier's in-charge approves"]];
+function stepState(r){
+  const s = r.status;
+  const idx = {sent:0, accepted:1, approved:2, declined:1, rejected:2}[s];
+  return REQ_STEPS.map(([k,l],i)=>{
+    let cls = i<idx ? "done" : i===idx ? "now" : "";
+    let label = l;
+    if (s==="declined" && i===1){ cls="bad"; label="Supplier declined"; }
+    if (s==="rejected" && i===2){ cls="bad"; label="In-charge rejected"; }
+    if (s==="approved" && i===2) cls="done";
+    if (s==="accepted" && i===1) cls="done";
+    if (s==="sent" && i===0) cls="done";
+    return `<li class="${cls}">${label}</li>`;
+  }).join("");
+}
+function viewReq(){
+  let html = `<h1>Request and approval</h1><div class="rule"></div>
+  <p class="lede">Nothing moves until the supplying facility confirms the quantity it really has and accepts, and its in-charge approves. Switch “Acting as” to see each side.</p>`;
+  html += storeBanner();
+  // new request form
+  const need = rows.find(r => r.csvRow===state.alertRow);
+  if (state.pick && need && need.fac===state.fac){
+    const c = match(need).list.find(x=>x.id===state.pick);
+    if (c){
+      const q = state.draftQty ?? c.offer;
+      html += `<section class="panel"><h2 style="margin-top:0">New request</h2>
+      <p>${esc(need.item)} from <b>${esc(c.src.name)}</b> to <b>${esc(need.fac)}</b>.</p>
+      <div class="form">
+        <label>Quantity (${esc(need.unit)})<input type="number" id="qty" min="1" max="${c.offer}" value="${q}"><span class="help">Prefilled with what ${esc(need.fac)} can use before the batch expires on ${fmtDate(c.row.expiry)}: up to ${fmt(c.offer)}.</span></label>
+        <label>Note to the supplying facility (optional)<textarea id="note" rows="2" maxlength="300"></textarea></label>
+        <div class="small muted">Estimated road distance ${fmt1(c.km)} km. Transport ${tsh(c.cost)} (${fmt1(c.km)} km × 2 return × ${tsh(R.RATE)}/km).</div>
+        <div class="row"><button class="btn" id="send" ${state.canWrite?"":"disabled"}>Send request</button><button class="btn quiet" id="cancelPick">Cancel</button></div>
+      </div></section>`;
+    }
+  }
+  const mine = myRequests();
+  const incoming = mine.filter(r=>r.fromFac===state.fac), outgoing = mine.filter(r=>r.toFac===state.fac);
+  html += `<h2>Incoming requests (${incoming.length})</h2>` + (incoming.length? incoming.map(reqCard).join("") : `<p class="muted">No facility has asked ${esc(state.fac)} for stock.</p>`);
+  html += `<h2>Requests you sent (${outgoing.length})</h2>` + (outgoing.length? outgoing.map(reqCard).join("") : `<p class="muted">None yet. Start from an alert on the Alerts screen.</p>`);
+  return html;
+}
+function reqCard(r){
+  const incoming = r.fromFac===state.fac;
+  let action = "";
+  if (incoming && r.status==="sent"){
+    action = state.role==="staff"
+      ? `<div class="panel"><div class="form"><label>Quantity you actually have to give (${esc(r.unit)})<input type="number" min="1" id="cq-${r.id}" value="${r.qtyRequested}"><span class="help">Check the shelf, not just EMR. The tool's figure may be wrong.</span></label>
+         <div class="row"><button class="btn" data-accept="${r.id}" ${state.canWrite?"":"disabled"}>Accept</button><button class="btn sec" data-decline="${r.id}" ${state.canWrite?"":"disabled"}>Decline</button></div></div></div>`
+      : `<div class="who-note">Waiting for ${esc(r.fromFac)} staff to confirm the quantity. Switch role to Staff to do this.</div>`;
+  } else if (incoming && r.status==="accepted"){
+    action = state.role==="incharge"
+      ? `<div class="panel"><p>Staff confirmed <b>${fmt(r.qtyConfirmed)} ${esc(r.unit)}</b>. As in-charge of ${esc(r.fromFac)}, approve the transfer?</p><div class="row"><button class="btn" data-approve="${r.id}" ${state.canWrite?"":"disabled"}>Approve</button><button class="btn sec" data-reject="${r.id}" ${state.canWrite?"":"disabled"}>Reject</button></div></div>`
+      : `<div class="who-note">Waiting for the in-charge of ${esc(r.fromFac)} to approve. Switch role to Facility in-charge to do this.</div>`;
+  } else if (!incoming && (r.status==="sent"||r.status==="accepted")){
+    action = `<div class="who-note">Waiting for ${esc(r.fromFac)}. <button class="btn quiet" data-as="${esc(r.fromFac)}|${r.status==="sent"?"staff":"incharge"}">Act as ${esc(r.fromFac)} ${r.status==="sent"?"staff":"in-charge"}</button></div>`;
+  } else if (r.status==="approved"){
+    action = `<div class="row"><button class="btn sec" data-tab="xfer">Arrange the transfer</button></div>`;
+  }
+  return `<article class="req"><div class="title"><h3>${esc(r.item)}</h3><span class="small muted">${fmtDate(new Date(r.created))}</span></div>
+    <div class="small">${esc(r.fromFac)} → ${esc(r.toFac)}. Requested ${fmt(r.qtyRequested)} ${esc(r.unit)}${r.qtyConfirmed!=null?`, confirmed ${fmt(r.qtyConfirmed)}`:""}. Estimated ${fmt1(r.km)} km, ${tsh(r.cost)} transport.</div>
+    ${r.note?`<div class="small muted">Note: ${esc(r.note)}</div>`:""}
+    <ol class="steps">${stepState(r)}</ol>${action}
+    ${(r.log||[]).length?`<ul class="log">${r.log.map(l=>`<li>${esc(l)}</li>`).join("")}</ul>`:""}</article>`;
+}
+
+const XFER = [["agreed","Transfer agreed"],["road","On the road"],["received","Collected / received"]];
+function viewXfer(){
+  const list = myRequests().filter(r=>r.status==="approved");
+  let html = `<h1>Transfer</h1><div class="rule"></div><p class="lede">The two facilities agree who arranges transport. Mark the stock as collected or received to close the loop.</p>${storeBanner()}`;
+  if (!list.length) return html + `<div class="empty"><strong>No approved transfers for ${esc(state.fac)}.</strong>A transfer appears here once the supplying facility's in-charge approves a request.<div style="margin-top:var(--space-2)"><button class="btn sec" data-tab="req">Go to requests</button></div></div>`;
+  return html + list.map(r=>{
+    const t = r.transfer || "agreed", ti = XFER.findIndex(x=>x[0]===t);
+    const arr = r.arranger ? (r.arranger==="to" ? r.toFac : r.fromFac) : null;
+    const msg = `To the driver, from ${r.fromFac} (supplying facility):
+Collect ${fmt(r.qtyConfirmed)} ${r.unit} of ${r.item}
+from ${r.fromFac}
+deliver to ${r.toFac}.
+Estimated road distance ${fmt1(r.km)} km (return trip ${fmt1(r.km*2)} km).
+Transport cost ${tsh(r.cost)} at ${tsh(R.RATE)}/km.
+Transport arranged by: ${arr || "not chosen yet"}.
+Logistics support: ${r.logistics || "none noted"}.`;
+    const isSupplier = state.fac === r.fromFac;
+    const noteText = state.noteDrafts[r.id] ?? r.pickupNote ?? msg;
+    let msgBlock;
+    if (r.noteSent){
+      msgBlock = `<div style="margin-top:var(--space-2)"><span class="tag mock">Simulated: no SMS left the prototype</span></div>
+        <p class="small" style="margin:6px 0 0"><b>Pickup message sent to the driver</b> by ${esc(r.noteSentBy)} on ${fmtDate(new Date(r.noteSent))}.</p>
+        <details style="margin-top:6px;padding:var(--space-1) var(--space-2)"><summary class="small">View the message</summary><div class="outbox">${esc(r.pickupNote)}</div></details>`;
+    } else if (state.canWrite){
+      msgBlock = `<div style="margin-top:var(--space-2)"><span class="tag mock">Mocked: sending is simulated, no SMS is sent</span></div>
+        <label class="small" style="display:grid;gap:4px;margin-top:var(--space-1);font-weight:600">Pickup message to the driver. Edit it, then send.${isSupplier?"":` <span class="muted" style="font-weight:400">Usually sent by ${esc(r.fromFac)} (supplying); either facility can send it here.</span>`}
+        <textarea rows="8" data-note="${r.id}" style="font-size:13px;font-weight:400">${esc(noteText)}</textarea></label>
+        <div class="row" style="margin-top:var(--space-1)"><button class="btn" data-send="${r.id}">Send message</button>
+        ${(state.noteDrafts[r.id] ?? r.pickupNote) != null ? `<button class="btn quiet" data-renote="${r.id}">Use the generated text again</button>` : ""}
+</div>`;
+    } else {
+      msgBlock = `<div style="margin-top:var(--space-2)"><span class="tag mock">Mocked: sending is simulated, no SMS is sent</span> <span class="small muted">Draft pickup message. ${esc(r.fromFac)} (supplying) edits and sends it.</span></div>
+        <div class="outbox">${esc(noteText)}</div>
+        ${isSupplier ? "" : `<button class="btn quiet" data-as="${esc(r.fromFac)}|staff|xfer">Act as ${esc(r.fromFac)} staff</button>`}`;
+    }
+    const next = XFER[ti+1];
+    return `<article class="req"><div class="title"><h3>${esc(r.item)}</h3><span class="small muted">${esc(r.fromFac)} → ${esc(r.toFac)}</span></div>
+      <div class="figs">
+        <div class="fig"><div class="k">Quantity</div><div class="v">${fmt(r.qtyConfirmed)} ${esc(r.unit)}</div></div>
+        <div class="fig"><div class="k">Estimated road distance</div><div class="v">${fmt1(r.km)} km</div><div class="s">straight line × ${R.ROAD}</div></div>
+        <div class="fig"><div class="k">Transport cost</div><div class="v">${tsh(r.cost)}</div><div class="s">${fmt1(r.km)} km × 2 (return) × ${tsh(R.RATE)}/km</div></div>
+      </div>
+      <ol class="steps">${XFER.map(([k,l],i)=>`<li class="${i<ti||t==="received"?"done":i===ti?"now":""}">${l}</li>`).join("")}</ol>
+      ${t!=="received"?`<div class="form">
+        <label>Who arranges transport?<select data-arr="${r.id}" ${state.canWrite?"":"disabled"}><option value="">Choose…</option><option value="to" ${r.arranger==="to"?"selected":""}>${esc(r.toFac)} (requesting)</option><option value="from" ${r.arranger==="from"?"selected":""}>${esc(r.fromFac)} (supplying)</option></select></label>
+        <label>Logistics support needed<input type="text" maxlength="120" data-log="${r.id}" value="${esc(r.logistics||"")}" placeholder="For example: cold box, motorbike, vehicle" ${state.canWrite?"":"disabled"}></label>
+      </div>`:""}
+      ${msgBlock}
+      <div class="row" style="margin-top:var(--space-2)">${next?`<button class="btn${r.noteSent?"":" sec"}" data-xfer="${r.id}|${next[0]}" ${state.canWrite&&r.arranger?"":"disabled"}>Mark ${next[1].toLowerCase()}</button>${r.arranger?"":`<span class="small muted">Choose who arranges transport first.</span>`}`:`<b>Done. Stock ${t==="received"?"collected / received":""}. Updating EMR stock records is a later step.</b>`}</div>
+      ${(r.log||[]).length?`<ul class="log">${r.log.map(l=>`<li>${esc(l)}</li>`).join("")}</ul>`:""}
+    </article>`;
+  }).join("");
+}
+function storeBanner(){
+  let b = "";
+  if (state.store==="local") b += `<div class="banner">Shared storage isn't available in this view, so requests are kept only in this browser tab and vanish on reload.</div>`;
+  if (!state.canWrite) b += `<div class="banner">You can view requests but not change them with your access to this page.</div>`;
+  return b;
+}
+function aboutPanel(){
+  const S = (k,v)=>`<tr><th scope="row">${k}</th><td>${v}</td></tr>`;
+  return `<details><summary>What is real and what is mocked in this prototype</summary>
+  <div class="scrollx"><table class="table">
+  ${S("Months of stock and flags","Calculated by the tool from the synthetic EMR snapshot (223 records: the original 216 plus 7 nearby surplus records added for the demo).")}
+  ${S("Level eligibility","Real rule, <span class=\"tag\">assumed table — confirm</span>: hospitals supply all levels below them; health centres supply health centres and dispensaries; dispensaries supply dispensaries and health centres.")}
+  ${S("Distance","<span class=\"tag\">estimate</span> Straight line between coordinates × ${R.ROAD}, labelled “estimated road distance”. Real road distance needs a routing service (openrouteservice).")}
+  ${S("Transport cost","Calculated: distance × 2 (return) × ${tsh(R.RATE)}/km. Commodity value is not included.")}
+  ${S("Ranking","<span class=\"tag ai\">Claude</span> Live call on the filtered shortlist only, side by side with the rule-based order (${W.cover*100}% need covered, ${W.dist*100}% distance, ${W.expiry*100}% source stock expiring within 6 months).")}
+  ${S("Requests and approval","Real, stored and shared between viewers. “Acting as” stands in for accounts.")}
+  ${S("Transport","<span class=\"tag mock\">Mocked</span> The pickup note is shown, not sent. Status is set by hand.")}
+  ${S("Data handling","${skipped.length} empty record skipped (CSV row ${skipped.map(s=>s.csvRow).join(", ")}). ${merged.length} duplicate merged (row ${merged.map(m=>m.csvRow).join(", ")}, “Kilombero Disp. 065”). Expired stock never offered. Above ${R.CHECK} months held for a quantity check.")}
+  </table></div></details>`;
+}
+
+function render(){
+  renderActing(); renderTabs();
+  const v = state.tab==="alerts"?viewAlerts(): state.tab==="sugg"?viewSugg(): state.tab==="req"?viewReq(): viewXfer();
+  $("#main").innerHTML = v;
+}
+function go(tab){ state.tab = tab; render(); window.scrollTo({top:0}); if (tab==="sugg"){ const n = rows.find(r=>r.csvRow===state.alertRow); if (n && n.fac===state.fac) askClaude(n); } }
+
+/* ---------- events ---------- */
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  const d = t.dataset;
+  if (d.tab) return go(d.tab);
+  if (d.fac){ state.fac = d.fac; state.role="staff"; rememberActing(); return go("alerts"); }
+  if (d.open){ state.alertRow = Number(d.open); state.pick=null; return go("sugg"); }
+  if (d.retry){ delete state.ai[Number(d.retry)]; const n = rows.find(r=>r.csvRow===Number(d.retry)); return askClaude(n); }
+  if (d.pick){ state.pick = d.pick; state.draftQty = null; return go("req"); }
+  if (d.as){ const [f,r,tb] = d.as.split("|"); state.fac=f; state.role=r; rememberActing(); return go(tb||"req"); }
+  if (t.id==="cancelPick"){ state.pick=null; return render(); }
+  if (t.id==="send"){
+    const need = rows.find(r=>r.csvRow===state.alertRow); const m = match(need); const c = m.list.find(x=>x.id===state.pick);
+    const q = Math.floor(Number($("#qty").value));
+    if (!(q>=1 && q<=c.offer)){ toast(`Enter a quantity from 1 to ${fmt(c.offer)}.`); return; }
+    const ai = state.ai[need.csvRow];
+    t.disabled = true;
+    const id = await addRequest({ item:need.item, unit:need.unit, toFac:need.fac, fromFac:c.src.name, qtyRequested:q, qtyConfirmed:null,
+      km:c.km, cost:c.cost, sourceBatch:c.row.batch, sourceExpiry:c.row.expiry.toISOString().slice(0,10), note:$("#note").value.trim().slice(0,300),
+      claudeRank: ai?.status==="done" ? ai.order.indexOf(c.id)+1 : null, ruleRank: m.list.indexOf(c)+1,
+      status:"sent", created:Date.now(), log:[`Request for ${q} sent by ${need.fac} staff.`] });
+    if (id){ state.pick=null; toast("Request sent."); render(); }
+    return;
+  }
+  if (d.accept){ const r = state.requests.find(x=>x.id===d.accept); const q = Math.floor(Number($("#cq-"+d.accept).value));
+    if (!(q>=1)){ toast("Enter the quantity you can give."); return; }
+    return patchRequest(d.accept, {status:"accepted", qtyConfirmed:q, _log:`${r.fromFac} staff confirmed ${q} and accepted.`}); }
+  if (d.decline){ const r = state.requests.find(x=>x.id===d.decline); return patchRequest(d.decline, {status:"declined", _log:`${r.fromFac} staff declined.`}); }
+  if (d.approve){ const r = state.requests.find(x=>x.id===d.approve); return patchRequest(d.approve, {status:"approved", transfer:"agreed", _log:`${r.fromFac} in-charge approved.`}); }
+  if (d.reject){ const r = state.requests.find(x=>x.id===d.reject); return patchRequest(d.reject, {status:"rejected", _log:`${r.fromFac} in-charge rejected.`}); }
+  if (d.send){ const ta = document.querySelector(`textarea[data-note="${d.send}"]`); const text = (ta ? ta.value : "").trim().slice(0,1000);
+    if (!text){ toast("Write the message before sending."); return; }
+    delete state.noteDrafts[d.send];
+    await patchRequest(d.send, {pickupNote:text, noteSent:Date.now(), noteSentBy:state.fac, _log:`Pickup message sent to the driver by ${state.fac} (simulated).`});
+    toast("Message sent (simulated)."); return; }
+  if (d.renote){ delete state.noteDrafts[d.renote]; const r = state.requests.find(x=>x.id===d.renote);
+    if (r && r.pickupNote!=null) await patchRequest(d.renote, {pickupNote:null}); else render(); return; }
+  if (d.xfer){ const [id,step] = d.xfer.split("|"); const lbl = XFER.find(x=>x[0]===step)[1].toLowerCase();
+    return patchRequest(id, {transfer:step, _log:`Marked ${lbl} by ${state.fac}.`}); }
+});
+document.addEventListener("input", e => { const t = e.target; if (t.dataset && t.dataset.note) state.noteDrafts[t.dataset.note] = t.value; });
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id==="asFac"){ state.fac = t.value; rememberActing(); return go(state.tab==="sugg"?"alerts":state.tab); }
+  if (t.id==="asRole"){ state.role = t.value; rememberActing(); return render(); }
+  if (t.dataset.arr){ const r = state.requests.find(x=>x.id===t.dataset.arr); const who = t.value==="to"?r.toFac:r.fromFac;
+    if (t.value) patchRequest(t.dataset.arr, {arranger:t.value, _log:`${who} will arrange transport.`}); }
+  if (t.dataset.log){ patchRequest(t.dataset.log, {logistics:t.value.trim().slice(0,120)}); }
+  if (t.id==="qty"){ state.draftQty = Number(t.value); }
+});
+
+$("#updated").textContent = "Last updated on " + fmtDate(SNAPSHOT);
+render();
+initStore();
+</script>
+</body>
+</html>
